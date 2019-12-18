@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+        "module": "AMD",
+        "outFile": "js/VERVE.js",
+        "target": "es6",
+        "sourceMap":true,
+        "removeComments": true
+    },
+    "include": [
+        "Src/**/*",
+        "*"
+    ],
+    "exclude": [
+        "node_modules",
+        "**/*.spec.ts"
+    ]
+
+}
