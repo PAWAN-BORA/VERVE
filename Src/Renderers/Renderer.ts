@@ -10,7 +10,7 @@ namespace VERVE {
             this.canvas = canvasData.getCanvas();
             this.gl = canvasData.getContext();
             this.init();
-            this._sprite = new Sprite(this.gl, 100, 100);
+            this._sprite = new Sprite(this.gl, this._shader, 100, 100);
             this._sprite.load();
         }
         private init():void {

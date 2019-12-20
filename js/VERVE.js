@@ -3,24 +3,47 @@ var VERVE;
     class Buffer {
         constructor(gl) {
             this._data = [];
+            this._indices = [];
             this._gl = gl;
-            this._buffer = gl.createBuffer();
+            this._vertexBuffer = gl.createBuffer();
+            this._textureBuffer = gl.createBuffer();
+            this._indexBuffer = gl.createBuffer();
         }
-        loadData(data) {
+        loadData(data, indices) {
             this._data = data;
-        }
-        bind() {
-            this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._buffer);
+            this._indices = indices;
+            this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._vertexBuffer);
             this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array(this._data), this._gl.STATIC_DRAW);
-            this._gl.vertexAttribPointer(0, 3, this._gl.FLOAT, false, 3 * 4, 0);
+            this._gl.vertexAttribPointer(0, 2, this._gl.FLOAT, false, 0, 0);
             this._gl.enableVertexAttribArray(0);
+            this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._textureBuffer);
+            this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]), this._gl.STATIC_DRAW);
+            this._gl.vertexAttribPointer(1, 2, this._gl.FLOAT, false, 0, 0);
+            this._gl.enableVertexAttribArray(1);
+            this._gl.bindBuffer(this._gl.ELEMENT_ARRAY_BUFFER, this._indexBuffer);
+            this._gl.bufferData(this._gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this._indices), this._gl.STATIC_DRAW);
+        }
+        enableVertex(location) {
+            this._gl.vertexAttribPointer(location, 2, this._gl.FLOAT, false, 2 * 4, 0);
+            this._gl.enableVertexAttribArray(location);
+        }
+        bind(texture) {
+            this._gl.bindBuffer(this._gl.ELEMENT_ARRAY_BUFFER, this._indexBuffer);
+            this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._vertexBuffer);
+            this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array(this._data), this._gl.STATIC_DRAW);
+            this._gl.vertexAttribPointer(0, 2, this._gl.FLOAT, false, 0, 0);
+            this._gl.enableVertexAttribArray(0);
+            this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._textureBuffer);
+            this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]), this._gl.STATIC_DRAW);
+            this._gl.vertexAttribPointer(1, 2, this._gl.FLOAT, false, 0, 0);
+            this._gl.enableVertexAttribArray(1);
         }
         unbind() {
             this._gl.disableVertexAttribArray(0);
             this._gl.bindBuffer(this._gl.ARRAY_BUFFER, null);
         }
         draw() {
-            this._gl.drawArrays(this._gl.TRIANGLES, 0, 3);
+            this._gl.drawElements(this._gl.TRIANGLES, this._indices.length, this._gl.UNSIGNED_SHORT, 0);
         }
     }
     VERVE.Buffer = Buffer;
@@ -28,30 +51,73 @@ var VERVE;
 var VERVE;
 (function (VERVE) {
     class Sprite {
-        constructor(gl, width, height) {
+        constructor(gl, shader, width, height) {
             this._data = [];
+            this._indices = [];
             this._gl = gl;
+            this._shader = shader;
             this.makeData();
+            this._texture = new VERVE.Texture(gl);
         }
         load() {
             this._buffer = new VERVE.Buffer(this._gl);
-            this._buffer.loadData(this._data);
+            this._buffer.loadData(this._data, this._indices);
+            let vertex = this._shader.getAttributeLocation("a_coordinate");
+            let texture = this._shader.getAttributeLocation("a_textureCoord");
+            this._buffer.enableVertex(vertex);
+            this._texture.active();
         }
         makeData() {
             this._data = [
-                0.0, 1.0, 0.0,
-                -1.0, -1.0, 0.0,
-                1.0, -1.0, 0.0
+                -0.5, 0.5,
+                0.5, 0.5,
+                0.5, -0.5,
+                -0.5, -0.5,
+            ];
+            this._indices = [
+                0, 1, 2, 2, 3, 0
             ];
         }
         update() {
         }
         render() {
-            this._buffer.bind();
+            this._buffer.bind(this._texture);
             this._buffer.draw();
         }
     }
     VERVE.Sprite = Sprite;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class Texture {
+        constructor(gl) {
+            this._gl = gl;
+            this._texture = gl.createTexture();
+            this.bind();
+            this._gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 255, 255, 0]));
+            this.unbind();
+        }
+        bind() {
+            this._gl.bindTexture(this._gl.TEXTURE_2D, this._texture);
+        }
+        unbind() {
+            this._gl.bindTexture(this._gl.TEXTURE_2D, undefined);
+        }
+        load(image) {
+            this.bind();
+            this._gl.texImage2D(this._gl.TEXTURE_2D, 0, this._gl.RGBA, this._gl.RGBA, this._gl.UNSIGNED_BYTE, image);
+            this._gl.texParameteri(this._gl.TEXTURE_2D, this._gl.TEXTURE_WRAP_S, this._gl.CLAMP_TO_EDGE);
+            this._gl.texParameteri(this._gl.TEXTURE_2D, this._gl.TEXTURE_WRAP_T, this._gl.CLAMP_TO_EDGE);
+            this._gl.texParameteri(this._gl.TEXTURE_2D, this._gl.TEXTURE_MIN_FILTER, this._gl.LINEAR);
+            this._gl.texParameteri(this._gl.TEXTURE_2D, this._gl.TEXTURE_MAG_FILTER, this._gl.LINEAR);
+            this.unbind();
+        }
+        active() {
+            this.bind();
+            this._gl.activeTexture(this._gl.TEXTURE0);
+        }
+    }
+    VERVE.Texture = Texture;
 })(VERVE || (VERVE = {}));
 var VERVE;
 (function (VERVE) {
@@ -96,7 +162,7 @@ var VERVE;
             this.canvas = canvasData.getCanvas();
             this.gl = canvasData.getContext();
             this.init();
-            this._sprite = new VERVE.Sprite(this.gl, 100, 100);
+            this._sprite = new VERVE.Sprite(this.gl, this._shader, 100, 100);
             this._sprite.load();
         }
         init() {
@@ -117,13 +183,29 @@ var VERVE;
 (function (VERVE) {
     class Shader {
         constructor(name, gl) {
+            this._attributes = {};
+            this._uniforms = {};
             this._name = name;
             this._gl = gl;
+        }
+        getAttributeLocation(name) {
+            if (this._attributes[name] == undefined) {
+                throw new Error(`attribute ${name} dose not exist in the shader ${this._name}`);
+            }
+            return this._attributes[name];
+        }
+        getUniformLocation(name) {
+            if (this._uniforms[name] == undefined) {
+                throw new Error(`unfiorm ${name} dose not exist in the shader ${this._name}`);
+            }
+            return this._uniforms[name];
         }
         laod(vertexSource, fragmentSource) {
             let vertexShader = this.loadShader(vertexSource, this._gl.VERTEX_SHADER);
             let fragmentShader = this.loadShader(fragmentSource, this._gl.FRAGMENT_SHADER);
             this.makeProgram(vertexShader, fragmentShader);
+            this.detectedAttributes();
+            this.detectedUniforms();
         }
         bind() {
             this._gl.useProgram(this._program);
@@ -143,6 +225,29 @@ var VERVE;
             this._gl.attachShader(this._program, fragmentShader);
             this._gl.linkProgram(this._program);
         }
+        detectedAttributes() {
+            let totalAttributes = this._gl.getProgramParameter(this._program, this._gl.ACTIVE_ATTRIBUTES);
+            console.log(totalAttributes);
+            for (let i = 0; i < totalAttributes; i++) {
+                let attribute = this._gl.getActiveAttrib(this._program, i);
+                if (attribute == undefined) {
+                    console.log("breaking the system attribute");
+                    break;
+                }
+                this._attributes[attribute.name] = this._gl.getAttribLocation(this._program, attribute.name);
+            }
+        }
+        detectedUniforms() {
+            let totalUniforms = this._gl.getProgramParameter(this._program, this._gl.ACTIVE_UNIFORMS);
+            for (let i = 0; i < totalUniforms; i++) {
+                let uniform = this._gl.getActiveUniform(this._program, i);
+                if (uniform == undefined) {
+                    console.log("breaking the system uniform");
+                    break;
+                }
+                this._uniforms[uniform.name] = this._gl.getUniformLocation(this._program, uniform.name);
+            }
+        }
     }
     VERVE.Shader = Shader;
 })(VERVE || (VERVE = {}));
@@ -152,16 +257,23 @@ var VERVE;
         constructor(gl) {
             super("Basic", gl);
             this._vertexSource = `
-        attribute vec3 v_coordinate; 
+        attribute vec2 a_coordinate;
+        attribute vec2 a_textureCoord;
+        varying vec2 v_textureColor;
+        uniform float u_zCoord;
         void main() {
-            gl_Position = vec4(v_coordinate, 1.0);
+            v_textureColor = a_textureCoord;
+            gl_Position = vec4(a_coordinate, u_zCoord, 1.0);
         }
         `;
             this._fragmentSource = `
         precision mediump float;
-
+        varying vec2 v_textureColor;
+        uniform sampler2D sampler;
+        
         void main() {
-            gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+            //gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+            gl_FragColor = texture2D(sampler, v_textureColor);
         }
         `;
             this.laod(this._vertexSource, this._fragmentSource);
@@ -169,10 +281,15 @@ var VERVE;
     }
     VERVE.BasicShader = BasicShader;
 })(VERVE || (VERVE = {}));
+let imageForTexture = new Image();
+imageForTexture.src = `Assets/Textures/star2.png`;
 let renderer = new VERVE.Renderer("canvas");
 function start() {
     requestAnimationFrame(start);
     renderer.render();
 }
-start();
+window.onload = () => {
+    console.log(imageForTexture);
+    start();
+};
 //# sourceMappingURL=VERVE.js.map

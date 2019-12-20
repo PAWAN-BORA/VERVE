@@ -9,16 +9,23 @@ namespace VERVE {
         }
 
         private _vertexSource = `
-        attribute vec3 v_coordinate; 
+        attribute vec2 a_coordinate;
+        attribute vec2 a_textureCoord;
+        varying vec2 v_textureColor;
+        uniform float u_zCoord;
         void main() {
-            gl_Position = vec4(v_coordinate, 1.0);
+            v_textureColor = a_textureCoord;
+            gl_Position = vec4(a_coordinate, u_zCoord, 1.0);
         }
         `
         private _fragmentSource = `
         precision mediump float;
-
+        varying vec2 v_textureColor;
+        uniform sampler2D sampler;
+        
         void main() {
-            gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+            //gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+            gl_FragColor = texture2D(sampler, v_textureColor);
         }
         `
     }

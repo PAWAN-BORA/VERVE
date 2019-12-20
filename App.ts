@@ -1,3 +1,5 @@
+let imageForTexture = new Image();
+imageForTexture.src = `Assets/Textures/star2.png`;
 let renderer = new VERVE.Renderer("canvas");
 // let renderer2 = new VERVE.Renderer();
 // document.body.appendChild(renderer2.canvas)
@@ -8,4 +10,7 @@ function start() {
     renderer.render();
     // renderer2.render();
 }
-start();
+window.onload = ()=>{
+    console.log(imageForTexture);
+    start();
+}
