@@ -17,6 +17,7 @@ namespace VERVE {
         }
         public load(image:TexImageSource):void {
             this.bind();
+            // console.log(image);
             this._gl.texImage2D(this._gl.TEXTURE_2D, 0, this._gl.RGBA, this._gl.RGBA, this._gl.UNSIGNED_BYTE, image);
            
             
@@ -26,6 +27,8 @@ namespace VERVE {
             this._gl.texParameteri(this._gl.TEXTURE_2D, this._gl.TEXTURE_MIN_FILTER, this._gl.LINEAR);
             this._gl.texParameteri(this._gl.TEXTURE_2D, this._gl.TEXTURE_MAG_FILTER, this._gl.LINEAR);
             this.unbind();
+            // this._gl.activeTexture(this._gl.TEXTURE0)
+            console.log("completing")
         }
         public active():void {
             this.bind();

@@ -53,7 +53,6 @@ namespace VERVE {
 
         private detectedAttributes():void {
             let totalAttributes = this._gl.getProgramParameter(this._program, this._gl.ACTIVE_ATTRIBUTES);
-            console.log(totalAttributes);
             for(let i=0; i<totalAttributes; i++) {
                 let attribute  = this._gl.getActiveAttrib(this._program, i);
                 if(attribute ==undefined) {

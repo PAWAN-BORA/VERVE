@@ -12,31 +12,24 @@ var VERVE;
         loadData(data, indices) {
             this._data = data;
             this._indices = indices;
-            this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._vertexBuffer);
-            this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array(this._data), this._gl.STATIC_DRAW);
-            this._gl.vertexAttribPointer(0, 2, this._gl.FLOAT, false, 0, 0);
-            this._gl.enableVertexAttribArray(0);
             this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._textureBuffer);
             this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]), this._gl.STATIC_DRAW);
             this._gl.vertexAttribPointer(1, 2, this._gl.FLOAT, false, 0, 0);
             this._gl.enableVertexAttribArray(1);
+            this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._vertexBuffer);
+            this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array(this._data), this._gl.STATIC_DRAW);
+            this._gl.vertexAttribPointer(0, 2, this._gl.FLOAT, false, 0, 0);
+            this._gl.enableVertexAttribArray(0);
             this._gl.bindBuffer(this._gl.ELEMENT_ARRAY_BUFFER, this._indexBuffer);
             this._gl.bufferData(this._gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this._indices), this._gl.STATIC_DRAW);
         }
         enableVertex(location) {
-            this._gl.vertexAttribPointer(location, 2, this._gl.FLOAT, false, 2 * 4, 0);
-            this._gl.enableVertexAttribArray(location);
         }
         bind(texture) {
-            this._gl.bindBuffer(this._gl.ELEMENT_ARRAY_BUFFER, this._indexBuffer);
             this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._vertexBuffer);
-            this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array(this._data), this._gl.STATIC_DRAW);
             this._gl.vertexAttribPointer(0, 2, this._gl.FLOAT, false, 0, 0);
-            this._gl.enableVertexAttribArray(0);
             this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._textureBuffer);
-            this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]), this._gl.STATIC_DRAW);
             this._gl.vertexAttribPointer(1, 2, this._gl.FLOAT, false, 0, 0);
-            this._gl.enableVertexAttribArray(1);
         }
         unbind() {
             this._gl.disableVertexAttribArray(0);
@@ -56,24 +49,26 @@ var VERVE;
             this._indices = [];
             this._gl = gl;
             this._shader = shader;
-            this.makeData();
+            this.makeData(width / 100);
             this._texture = new VERVE.Texture(gl);
         }
-        load() {
+        load(image) {
             this._buffer = new VERVE.Buffer(this._gl);
             this._buffer.loadData(this._data, this._indices);
-            let vertex = this._shader.getAttributeLocation("a_coordinate");
-            let texture = this._shader.getAttributeLocation("a_textureCoord");
-            this._buffer.enableVertex(vertex);
-            this._texture.active();
+            if (image != undefined)
+                this._texture.load(image);
         }
-        makeData() {
+        makeData(num = 0) {
             this._data = [
                 -0.5, 0.5,
                 0.5, 0.5,
                 0.5, -0.5,
                 -0.5, -0.5,
             ];
+            for (let i = 0; i < this._data.length; i++) {
+                this._data[i] += num;
+            }
+            console.log(this._data);
             this._indices = [
                 0, 1, 2, 2, 3, 0
             ];
@@ -81,6 +76,7 @@ var VERVE;
         update() {
         }
         render() {
+            this._texture.active();
             this._buffer.bind(this._texture);
             this._buffer.draw();
         }
@@ -111,6 +107,7 @@ var VERVE;
             this._gl.texParameteri(this._gl.TEXTURE_2D, this._gl.TEXTURE_MIN_FILTER, this._gl.LINEAR);
             this._gl.texParameteri(this._gl.TEXTURE_2D, this._gl.TEXTURE_MAG_FILTER, this._gl.LINEAR);
             this.unbind();
+            console.log("completing");
         }
         active() {
             this.bind();
@@ -162,18 +159,23 @@ var VERVE;
             this.canvas = canvasData.getCanvas();
             this.gl = canvasData.getContext();
             this.init();
-            this._sprite = new VERVE.Sprite(this.gl, this._shader, 100, 100);
-            this._sprite.load();
         }
         init() {
             this._shader = new VERVE.BasicShader(this.gl);
             this._shader.bind();
+        }
+        temClass() {
+            this._sprite = new VERVE.Sprite(this.gl, this._shader, 100, 100);
+            this._sprite2 = new VERVE.Sprite(this.gl, this._shader, 0, 100);
+            this._sprite.load(imageForTexture);
+            this._sprite2.load();
         }
         update() {
         }
         render() {
             this.gl.clearColor(1, 0, 1, 1);
             this.gl.clear(this.gl.COLOR_BUFFER_BIT || this.gl.DEPTH_BUFFER_BIT);
+            this._sprite2.render();
             this._sprite.render();
         }
     }
@@ -227,7 +229,6 @@ var VERVE;
         }
         detectedAttributes() {
             let totalAttributes = this._gl.getProgramParameter(this._program, this._gl.ACTIVE_ATTRIBUTES);
-            console.log(totalAttributes);
             for (let i = 0; i < totalAttributes; i++) {
                 let attribute = this._gl.getActiveAttrib(this._program, i);
                 if (attribute == undefined) {
@@ -283,6 +284,10 @@ var VERVE;
 })(VERVE || (VERVE = {}));
 let imageForTexture = new Image();
 imageForTexture.src = `Assets/Textures/star2.png`;
+imageForTexture.onload = () => {
+    renderer.temClass();
+    start();
+};
 let renderer = new VERVE.Renderer("canvas");
 function start() {
     requestAnimationFrame(start);
@@ -290,6 +295,5 @@ function start() {
 }
 window.onload = () => {
     console.log(imageForTexture);
-    start();
 };
 //# sourceMappingURL=VERVE.js.map

@@ -17,40 +17,45 @@ namespace VERVE {
         public loadData(data:number[], indices:number[]) {
             this._data = data;
             this._indices = indices;
-            this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._vertexBuffer);
-            this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array(this._data), this._gl.STATIC_DRAW);
-            this._gl.vertexAttribPointer(0, 2, this._gl.FLOAT, false, 0, 0); // temp might be;
-            this._gl.enableVertexAttribArray(0);
 
             this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._textureBuffer);
             this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]), this._gl.STATIC_DRAW);
             this._gl.vertexAttribPointer(1, 2, this._gl.FLOAT, false, 0, 0,); // temp might be;
             this._gl.enableVertexAttribArray(1);
+            
+            this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._vertexBuffer);
+            this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array(this._data), this._gl.STATIC_DRAW);
+            this._gl.vertexAttribPointer(0, 2, this._gl.FLOAT, false, 0, 0); // temp might be;
+            this._gl.enableVertexAttribArray(0);
 
+            
             this._gl.bindBuffer(this._gl.ELEMENT_ARRAY_BUFFER, this._indexBuffer);
             this._gl.bufferData(this._gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this._indices), this._gl.STATIC_DRAW);
+            
+
 
             
         }
         public enableVertex(location:number) {
-            this._gl.vertexAttribPointer(location, 2, this._gl.FLOAT, false, 2*4, 0); // temp might be;
-            this._gl.enableVertexAttribArray(location);
+            // this._gl.vertexAttribPointer(location, 2, this._gl.FLOAT, false, 2*4, 0); // temp might be;
+            // this._gl.enableVertexAttribArray(location);
             // this._gl.vertexAttribPointer(1, 2, this._gl.FLOAT, false, 2*4, 0); // temp might be;
             // this._gl.enableVertexAttribArray(1);
         }
         public bind(texture:Texture) {
-            this._gl.bindBuffer(this._gl.ELEMENT_ARRAY_BUFFER, this._indexBuffer);
+            // this._gl.bindBuffer(this._gl.ELEMENT_ARRAY_BUFFER, this._indexBuffer);
 
 
             this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._vertexBuffer);
-            this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array(this._data), this._gl.STATIC_DRAW);
+            // this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array(this._data), this._gl.STATIC_DRAW);
             this._gl.vertexAttribPointer(0, 2, this._gl.FLOAT, false, 0, 0); // temp might be;
-            this._gl.enableVertexAttribArray(0);
+            // this._gl.enableVertexAttribArray(0);
 
             this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._textureBuffer);
-            this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]), this._gl.STATIC_DRAW);
+            // this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]), this._gl.STATIC_DRAW);
             this._gl.vertexAttribPointer(1, 2, this._gl.FLOAT, false, 0, 0,); // temp might be;
-            this._gl.enableVertexAttribArray(1);
+            // this._gl.enableVertexAttribArray(1);
+
             // this._gl.vertexAttribPointer(0, 2, this._gl.FLOAT, false, 2*4, 0); // temp might be;
             // this._gl.enableVertexAttribArray(0);
             // this._gl.vertexAttribPointer(1, 2, this._gl.FLOAT, false, 2*4, 2*4); // temp might be;
@@ -66,6 +71,7 @@ namespace VERVE {
 
         public draw():void {
             // this._gl.drawArrays(this._gl.TRIANGLES, 0, 3);
+            // console.log()
             this._gl.drawElements(this._gl.TRIANGLES, this._indices.length, this._gl.UNSIGNED_SHORT, 0);
         }
     }
