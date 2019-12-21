@@ -13,9 +13,10 @@ namespace VERVE {
         attribute vec2 a_textureCoord;
         varying vec2 v_textureColor;
         uniform float u_zCoord;
+        uniform mat4 u_projectionView;
         void main() {
             v_textureColor = a_textureCoord;
-            gl_Position = vec4(a_coordinate, u_zCoord, 1.0);
+            gl_Position = u_projectionView*vec4(a_coordinate, u_zCoord, 1.0);
         }
         `
         private _fragmentSource = `
