@@ -25,7 +25,7 @@ var VERVE;
         }
         enableVertex(location) {
         }
-        bind(texture) {
+        bind() {
             this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._vertexBuffer);
             this._gl.vertexAttribPointer(0, 2, this._gl.FLOAT, false, 0, 0);
             this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._textureBuffer);
@@ -43,41 +43,72 @@ var VERVE;
 })(VERVE || (VERVE = {}));
 var VERVE;
 (function (VERVE) {
-    class Sprite {
-        constructor(gl, shader, width, height) {
+    class Camera {
+        constructor(left, right, bottom, top) {
+            this.projection = VERVE.Matrix4X4.orthographic(left, right, bottom, top, 0, 100);
+        }
+    }
+    VERVE.Camera = Camera;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class Geometry {
+        constructor() {
             this._data = [];
             this._indices = [];
-            this._gl = gl;
-            this._shader = shader;
-            this.makeData(width / 100);
-            this._texture = new VERVE.Texture(gl);
+            this._vertices = [];
         }
-        load(image) {
-            this._buffer = new VERVE.Buffer(this._gl);
-            this._buffer.loadData(this._data, this._indices);
-            if (image != undefined)
-                this._texture.load(image);
+        get data() {
+            return this._data;
         }
-        makeData(num = 0) {
-            this._data = [
-                -0.5, 0.5,
-                0.5, 0.5,
-                0.5, -0.5,
-                -0.5, -0.5,
-            ];
-            for (let i = 0; i < this._data.length; i++) {
-                this._data[i] += num;
+        get indices() {
+            return this._indices;
+        }
+        makeData() {
+            this._data = [];
+            for (let v of this._vertices) {
+                this._data.push(v.x, v.y);
             }
-            console.log(this._data);
-            this._indices = [
-                0, 1, 2, 2, 3, 0
+        }
+    }
+    VERVE.Geometry = Geometry;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class PlaneGeometry extends VERVE.Geometry {
+        constructor(width, height) {
+            super();
+            this._data = [
+                0, 0,
+                width, 0,
+                width, height,
+                0, height
             ];
+            this._indices = [
+                0, 1, 2,
+                2, 3, 0,
+            ];
+        }
+    }
+    VERVE.PlaneGeometry = PlaneGeometry;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class Sprite {
+        constructor(geometry, material) {
+            this._data = [];
+            this._indices = [];
+            this._data = geometry.data;
+            this._indices = geometry.indices;
+        }
+        load(gl) {
+            this._buffer = new VERVE.Buffer(gl);
+            this._buffer.loadData(this._data, this._indices);
         }
         update() {
         }
-        render() {
-            this._texture.active();
-            this._buffer.bind(this._texture);
+        draw() {
+            this._buffer.bind();
             this._buffer.draw();
         }
     }
@@ -115,6 +146,317 @@ var VERVE;
         }
     }
     VERVE.Texture = Texture;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class Material {
+        get texture() {
+            return this._texture;
+        }
+        set texture(value) {
+            this._texture = value;
+        }
+    }
+    VERVE.Material = Material;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class BasicMaterial extends VERVE.Material {
+        constructor(color) {
+            super();
+            this._color = color;
+        }
+        loadUniform(gl, shader) {
+            let colorLocation = shader.getUniformLocation("u_color");
+            gl.uniform4f(colorLocation, 1, 1, 0, 1);
+        }
+    }
+    VERVE.BasicMaterial = BasicMaterial;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class TextureMaterial extends VERVE.Material {
+        constructor(image) {
+            super();
+            this._image = image;
+        }
+        loadTexture() {
+            this._texture.load(this._image);
+        }
+        loadUniform(gl, shader) {
+            let colorLocation = shader.getUniformLocation("u_color");
+            gl.uniform4f(colorLocation, 1, 1, 1, 1);
+        }
+    }
+    VERVE.TextureMaterial = TextureMaterial;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class Matrix4X4 {
+        constructor() {
+            this._data = [];
+            this._data = [
+                1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1,
+            ];
+        }
+        get data() {
+            return this._data;
+        }
+        static orthographic(left, right, bottom, top, near, far) {
+            let mat = new Matrix4X4();
+            let width = right - left;
+            let height = bottom - top;
+            let depth = far - near;
+            mat._data[0] = 2.0 / width;
+            mat._data[5] = -2.0 / height;
+            mat._data[10] = -2.0 / depth;
+            mat._data[12] = -(right + left) / width;
+            mat._data[13] = (top + bottom) / height;
+            mat._data[14] = (far + near) / depth;
+            return mat;
+        }
+        static translation(position) {
+            let mat = new Matrix4X4();
+            mat._data[12] = position.x;
+            mat._data[13] = position.y;
+            mat._data[14] = position.z;
+            return mat;
+        }
+        static rotationZ(angle) {
+            let mat = new Matrix4X4();
+            let c = Math.cos(angle);
+            let s = Math.sin(angle);
+            mat._data[0] = c;
+            mat._data[1] = s;
+            mat._data[4] = -s;
+            mat._data[5] = c;
+            return mat;
+        }
+        static scale(scale) {
+            let mat = new Matrix4X4();
+            mat._data[0] = scale.x;
+            mat._data[5] = scale.y;
+            mat._data[10] = scale.z;
+            return mat;
+        }
+        static multiply(a, b) {
+            let mat = new Matrix4X4();
+            let a11 = a._data[0], a12 = a._data[4], a13 = a._data[8], a14 = a._data[12];
+            let a21 = a._data[1], a22 = a._data[5], a23 = a._data[9], a24 = a._data[13];
+            let a31 = a._data[2], a32 = a._data[6], a33 = a._data[10], a34 = a._data[14];
+            let a41 = a._data[3], a42 = a._data[7], a43 = a._data[11], a44 = a._data[15];
+            let b11 = b._data[0], b12 = b._data[4], b13 = b._data[8], b14 = b._data[12];
+            let b21 = b._data[1], b22 = b._data[5], b23 = b._data[9], b24 = b._data[13];
+            let b31 = b._data[2], b32 = b._data[6], b33 = b._data[10], b34 = b._data[14];
+            let b41 = b._data[3], b42 = b._data[7], b43 = b._data[11], b44 = b._data[15];
+            mat._data[0] = a11 * b11 + a12 * b21 + a13 * b31 + a14 * b41;
+            mat._data[4] = a11 * b12 + a12 * b22 + a13 * b32 + a14 * b42;
+            mat._data[8] = a11 * b13 + a12 * b23 + a13 * b33 + a14 * b43;
+            mat._data[12] = a11 * b14 + a12 * b24 + a13 * b34 + a14 * b44;
+            mat._data[1] = a21 * b11 + a22 * b21 + a23 * b31 + a24 * b41;
+            mat._data[5] = a21 * b12 + a22 * b22 + a23 * b32 + a24 * b42;
+            mat._data[9] = a21 * b13 + a22 * b23 + a23 * b33 + a24 * b43;
+            mat._data[13] = a21 * b14 + a22 * b24 + a23 * b34 + a24 * b44;
+            mat._data[2] = a31 * b11 + a32 * b21 + a33 * b31 + a34 * b41;
+            mat._data[6] = a31 * b12 + a32 * b22 + a33 * b32 + a34 * b42;
+            mat._data[10] = a31 * b13 + a32 * b23 + a33 * b33 + a34 * b43;
+            mat._data[14] = a31 * b14 + a32 * b24 + a33 * b34 + a34 * b44;
+            mat._data[3] = a41 * b11 + a42 * b21 + a43 * b31 + a44 * b41;
+            mat._data[7] = a41 * b12 + a42 * b22 + a43 * b32 + a44 * b42;
+            mat._data[11] = a41 * b13 + a42 * b23 + a43 * b33 + a44 * b43;
+            mat._data[15] = a41 * b14 + a42 * b24 + a43 * b34 + a44 * b44;
+            return mat;
+        }
+        static inverse(matrix) {
+        }
+    }
+    VERVE.Matrix4X4 = Matrix4X4;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class Transform {
+        constructor(position = new VERVE.Vector3, rotation = new VERVE.Vector3(), scale = VERVE.Vector3.one()) {
+            this.position = position;
+            this.rotation = rotation;
+            this.scale = scale;
+        }
+        getTranformationMatrix() {
+            let trasnlate = VERVE.Matrix4X4.translation(this.position);
+            let rotate = VERVE.Matrix4X4.rotationZ(this.rotation.z);
+            let scale = VERVE.Matrix4X4.scale(this.scale);
+            return VERVE.Matrix4X4.multiply(VERVE.Matrix4X4.multiply(trasnlate, rotate), scale);
+        }
+    }
+    VERVE.Transform = Transform;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class Vector2 {
+        constructor(x = 0, y = 0) {
+            this.x = x;
+            this.y = y;
+        }
+        toArray() {
+            return [this.x, this.y];
+        }
+    }
+    VERVE.Vector2 = Vector2;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class Vector3 {
+        constructor(x = 0, y = 0, z = 0) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+        static one() {
+            let vec = new Vector3();
+            vec.x = 1;
+            vec.y = 1;
+            vec.z = 1;
+            return vec;
+        }
+        Add(v) {
+            this.x += v.x;
+            this.y += v.y;
+            this.z += v.z;
+            return this;
+        }
+    }
+    VERVE.Vector3 = Vector3;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class GameObject {
+        constructor() {
+            this._component = [];
+            this.isLoading = true;
+            this._transform = new VERVE.Transform();
+            this.worldMatrix = this._transform.getTranformationMatrix();
+        }
+        get scene() {
+            return this._scene;
+        }
+        set scene(value) {
+            this._scene = value;
+        }
+        load(gl) {
+            for (let c of this._component) {
+                if (c.isLoading) {
+                    c.load(gl);
+                    c.isLoading = false;
+                }
+            }
+            this.isLoading = false;
+        }
+        addComponent(component) {
+            this._component.push(component);
+            component.parent = this;
+        }
+        removeComponent(component) {
+            let index = this._component.indexOf(component);
+            if (index !== -1) {
+                this._component.splice(index, 1);
+            }
+        }
+        update() {
+            this.worldMatrix = this._transform.getTranformationMatrix();
+            for (let c of this._component) {
+                c.update();
+            }
+        }
+        render(render) {
+            for (let c of this._component) {
+                c.render(render);
+            }
+        }
+    }
+    VERVE.GameObject = GameObject;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class Scene {
+        constructor() {
+            this._gameObject = [];
+        }
+        BeforeRender(renderer) {
+        }
+        addObject(gameObject) {
+            this._gameObject.push(gameObject);
+        }
+        update() {
+            for (let g of this._gameObject) {
+                g.update();
+            }
+        }
+        render(renderer) {
+            for (let g of this._gameObject) {
+                g.render(renderer);
+            }
+        }
+    }
+    VERVE.Scene = Scene;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class SpriteComponent {
+        constructor(geometry, material) {
+            this.isLoading = true;
+            this._geometry = geometry;
+            this._material = material;
+            this._transform = new VERVE.Transform();
+        }
+        get buffer() {
+            return this._buffer;
+        }
+        set buffer(value) {
+            this._buffer = value;
+        }
+        get x() {
+            return this._transform.position.x;
+        }
+        set x(val) {
+            this._transform.position.x = val;
+        }
+        get y() {
+            return this._transform.position.y;
+        }
+        set y(val) {
+            this._transform.position.y = val;
+        }
+        get rotate() {
+            return this._transform.rotation.z;
+        }
+        set rotate(val) {
+            this._transform.rotation.z = val;
+        }
+        load(gl) {
+            this._buffer = new VERVE.Buffer(gl);
+            this._buffer.loadData(this._geometry.data, this._geometry.indices);
+            this._material.texture = new VERVE.Texture(gl);
+            if (this._material instanceof VERVE.TextureMaterial) {
+                this._material.loadTexture();
+            }
+            this._material.texture.active();
+        }
+        update() {
+            this._localMatrix = this._transform.getTranformationMatrix();
+        }
+        render(render) {
+            let model = VERVE.Matrix4X4.multiply(this.parent.worldMatrix, this._localMatrix);
+            let modelLocation = render.shader.getUniformLocation("u_model");
+            render.gl.uniformMatrix4fv(modelLocation, false, new Float32Array(model.data));
+            this._material.loadUniform(render.gl, render.shader);
+            this._material.texture.active();
+            this._buffer.bind();
+            this._buffer.draw();
+        }
+    }
+    VERVE.SpriteComponent = SpriteComponent;
 })(VERVE || (VERVE = {}));
 var VERVE;
 (function (VERVE) {
@@ -161,22 +503,34 @@ var VERVE;
             this.init();
         }
         init() {
-            this._shader = new VERVE.BasicShader(this.gl);
-            this._shader.bind();
+            this.shader = new VERVE.BasicShader(this.gl);
+            this.shader.bind();
         }
-        temClass() {
-            this._sprite = new VERVE.Sprite(this.gl, this._shader, 100, 100);
-            this._sprite2 = new VERVE.Sprite(this.gl, this._shader, 0, 100);
-            this._sprite.load(imageForTexture);
-            this._sprite2.load();
+        tempFun() {
+        }
+        setCamera(camera) {
+            let projectionLocation = this.shader.getUniformLocation("u_projectionView");
+            this.gl.uniformMatrix4fv(projectionLocation, false, new Float32Array(camera.projection.data));
+            let colorLocation = this.shader.getUniformLocation("u_color");
+            this.gl.uniform4f(colorLocation, 1, 1, 1, 1);
+        }
+        loadObject(gameObject) {
+            if (gameObject.isLoading) {
+                gameObject.load(this.gl);
+                console.log("working");
+                gameObject.isLoading = false;
+            }
         }
         update() {
+            scene.update();
         }
-        render() {
+        render(scene) {
             this.gl.clearColor(1, 0, 1, 1);
             this.gl.clear(this.gl.COLOR_BUFFER_BIT || this.gl.DEPTH_BUFFER_BIT);
-            this._sprite2.render();
-            this._sprite.render();
+            for (let object of scene._gameObject) {
+                this.loadObject(object);
+            }
+            scene.render(this);
         }
     }
     VERVE.Renderer = Renderer;
@@ -262,19 +616,21 @@ var VERVE;
         attribute vec2 a_textureCoord;
         varying vec2 v_textureColor;
         uniform float u_zCoord;
+        uniform mat4 u_projectionView;
+        uniform mat4 u_model;
         void main() {
             v_textureColor = a_textureCoord;
-            gl_Position = vec4(a_coordinate, u_zCoord, 1.0);
+            gl_Position = u_projectionView*u_model*vec4(a_coordinate, u_zCoord, 1.0);
         }
         `;
             this._fragmentSource = `
         precision mediump float;
         varying vec2 v_textureColor;
         uniform sampler2D sampler;
-        
+        uniform vec4 u_color;
         void main() {
             //gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-            gl_FragColor = texture2D(sampler, v_textureColor);
+            gl_FragColor = texture2D(sampler, v_textureColor)*u_color;
         }
         `;
             this.laod(this._vertexSource, this._fragmentSource);
@@ -285,15 +641,34 @@ var VERVE;
 let imageForTexture = new Image();
 imageForTexture.src = `Assets/Textures/star2.png`;
 imageForTexture.onload = () => {
-    renderer.temClass();
-    start();
 };
 let renderer = new VERVE.Renderer("canvas");
+let camera = new VERVE.Camera(0, renderer.canvas.width, renderer.canvas.height, 0);
+renderer.setCamera(camera);
+let scene = new VERVE.Scene();
+let gameObject = new VERVE.GameObject();
+let geomentry = new VERVE.PlaneGeometry(500, 500);
+let Material = new VERVE.BasicMaterial("red");
+let texture = new VERVE.TextureMaterial(imageForTexture);
+let spriteComponent = new VERVE.SpriteComponent(geomentry, Material);
+let geomentry2 = new VERVE.PlaneGeometry(200, 200);
+let spriteComponent2 = new VERVE.SpriteComponent(geomentry2, texture);
+spriteComponent2.x = 400;
+spriteComponent2.y = 150;
+scene.addObject(gameObject);
+gameObject.addComponent(spriteComponent);
+gameObject.addComponent(spriteComponent2);
+let updating = true;
 function start() {
     requestAnimationFrame(start);
-    renderer.render();
+    if (updating)
+        renderer.update();
+    renderer.render(scene);
+    gameObject._transform.rotation.z += 0.01;
 }
 window.onload = () => {
     console.log(imageForTexture);
+    renderer.tempFun();
+    start();
 };
 //# sourceMappingURL=VERVE.js.map

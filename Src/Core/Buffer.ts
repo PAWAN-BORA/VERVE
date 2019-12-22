@@ -42,7 +42,7 @@ namespace VERVE {
             // this._gl.vertexAttribPointer(1, 2, this._gl.FLOAT, false, 2*4, 0); // temp might be;
             // this._gl.enableVertexAttribArray(1);
         }
-        public bind(texture:Texture) {
+        public bind() {
             // this._gl.bindBuffer(this._gl.ELEMENT_ARRAY_BUFFER, this._indexBuffer);
 
 
@@ -55,7 +55,6 @@ namespace VERVE {
             // this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]), this._gl.STATIC_DRAW);
             this._gl.vertexAttribPointer(1, 2, this._gl.FLOAT, false, 0, 0,); // temp might be;
             // this._gl.enableVertexAttribArray(1);
-
             // this._gl.vertexAttribPointer(0, 2, this._gl.FLOAT, false, 2*4, 0); // temp might be;
             // this._gl.enableVertexAttribArray(0);
             // this._gl.vertexAttribPointer(1, 2, this._gl.FLOAT, false, 2*4, 2*4); // temp might be;
