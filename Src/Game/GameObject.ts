@@ -12,6 +12,24 @@ namespace VERVE {
         public set scene(value: Scene) {
             this._scene = value;
         }
+        public get x():number {
+            return this._transform.position.x;
+        }
+        public set x(value:number) {
+            this._transform.position.x = value;
+        }
+        public get y():number {
+            return this._transform.position.y;
+        }
+        public set y(value:number) {
+            this._transform.position.y = value;
+        }
+        public get rotate():number {
+            return this._transform.rotation.z;
+        }
+        public set rotate(value:number) {
+            this._transform.rotation.z = value;
+        }
         constructor() {
             this._transform = new Transform();
             this.worldMatrix = this._transform.getTranformationMatrix(); 

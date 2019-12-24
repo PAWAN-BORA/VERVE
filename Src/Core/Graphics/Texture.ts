@@ -6,7 +6,7 @@ namespace VERVE {
             this._gl = gl;
             this._texture = gl.createTexture();
             this.bind();
-            this._gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 255, 255, 0]));
+            this._gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 255, 255, 255]));
             this.unbind();
         }
         private bind():void {

@@ -18,6 +18,9 @@ namespace VERVE {
         private init():void {
             this.shader = new BasicShader(this.gl);
             this.shader.bind();
+            this.gl.enable(this.gl.BLEND);
+            // this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA);
+            this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
         }
         public tempFun():void {
             
@@ -41,7 +44,8 @@ namespace VERVE {
             scene.update();
         }
         public render(scene:Scene):void {
-            this.gl.clearColor(1, 0, 1, 1);
+            // this.gl.colorMask(false, false, false, true);
+            this.gl.clearColor(0, 1, 1, 1);
             this.gl.clear(this.gl.COLOR_BUFFER_BIT || this.gl.DEPTH_BUFFER_BIT); 
             for(let object of scene._gameObject) {
                 this.loadObject(object);

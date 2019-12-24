@@ -27,7 +27,10 @@ namespace VERVE {
         uniform vec4 u_color;
         void main() {
             //gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+            // vec4 color = vec4(1.0, 1.0, 1.0, 1.0);
             gl_FragColor = texture2D(sampler, v_textureColor)*u_color;
+            // gl_FragColor = color*u_color;
+            // gl_FragColor.rgb *= gl_FragColor.a;
         }
         `
     }

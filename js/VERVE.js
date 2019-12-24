@@ -52,6 +52,70 @@ var VERVE;
 })(VERVE || (VERVE = {}));
 var VERVE;
 (function (VERVE) {
+    class Color {
+        constructor(r = 0, g = 0, b = 0, a = 255) {
+            this._r = r;
+            this._g = g;
+            this._b = b;
+            this._a = a;
+        }
+        toFloatArray() {
+            return [this._r / 255, this._g / 255, this._b / 255, this._a / 255];
+        }
+        static getColor(color) {
+            let r, g, b, a = 255;
+            if (color.charAt(0) === "#") {
+                let value = color.split("#")[1];
+                r = parseInt(value.substring(0, 2), 16);
+                g = parseInt(value.substring(2, 4), 16);
+                b = parseInt(value.substring(4, 6), 16);
+                return new Color(r, g, b);
+            }
+            else if (color.substring(0, 4) === "rbga") {
+                let value = color.split("rbga")[1].slice(1, -1);
+                let colors = value.split(",");
+                r = parseInt(colors[0]);
+                if (isNaN(r)) {
+                    throw new Error(`wrong rbga format: red value is not defined`);
+                }
+                g = parseInt(colors[1]);
+                if (isNaN(g)) {
+                    throw new Error(`wrong rbga format: green value is not defined`);
+                }
+                b = parseInt(colors[2]);
+                if (isNaN(b)) {
+                    throw new Error(`wrong rbga format: blue value is not defined`);
+                }
+                a = parseInt(colors[3]);
+                if (isNaN(a)) {
+                    throw new Error(`wrong rbga format: alpah value is not defined`);
+                }
+                return new Color(r, g, b, a);
+            }
+            else if (color.substring(0, 3) === "rbg") {
+                let value = color.split("rbga")[1].slice(1, -1);
+                let colors = value.split(",");
+                r = parseInt(colors[0]);
+                if (isNaN(r)) {
+                    throw new Error(`wrong rbga format: red value is not defined`);
+                }
+                g = parseInt(colors[1]);
+                if (isNaN(g)) {
+                    throw new Error(`wrong rbga format: green value is not defined`);
+                }
+                b = parseInt(colors[2]);
+                if (isNaN(b)) {
+                    throw new Error(`wrong rbga format: blue value is not defined`);
+                }
+                return new Color(r, g, b);
+            }
+            return null;
+        }
+    }
+    VERVE.Color = Color;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
     class Geometry {
         constructor() {
             this._data = [];
@@ -121,7 +185,7 @@ var VERVE;
             this._gl = gl;
             this._texture = gl.createTexture();
             this.bind();
-            this._gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 255, 255, 0]));
+            this._gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 255, 255, 255]));
             this.unbind();
         }
         bind() {
@@ -164,11 +228,14 @@ var VERVE;
     class BasicMaterial extends VERVE.Material {
         constructor(color) {
             super();
-            this._color = color;
+            this._color = VERVE.Color.getColor(color);
+        }
+        set color(value) {
+            this._color = VERVE.Color.getColor(value);
         }
         loadUniform(gl, shader) {
             let colorLocation = shader.getUniformLocation("u_color");
-            gl.uniform4f(colorLocation, 1, 1, 0, 1);
+            gl.uniform4fv(colorLocation, this._color.toFloatArray());
         }
     }
     VERVE.BasicMaterial = BasicMaterial;
@@ -344,6 +411,24 @@ var VERVE;
         set scene(value) {
             this._scene = value;
         }
+        get x() {
+            return this._transform.position.x;
+        }
+        set x(value) {
+            this._transform.position.x = value;
+        }
+        get y() {
+            return this._transform.position.y;
+        }
+        set y(value) {
+            this._transform.position.y = value;
+        }
+        get rotate() {
+            return this._transform.rotation.z;
+        }
+        set rotate(value) {
+            this._transform.rotation.z = value;
+        }
         load(gl) {
             for (let c of this._component) {
                 if (c.isLoading) {
@@ -505,6 +590,8 @@ var VERVE;
         init() {
             this.shader = new VERVE.BasicShader(this.gl);
             this.shader.bind();
+            this.gl.enable(this.gl.BLEND);
+            this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
         }
         tempFun() {
         }
@@ -525,7 +612,7 @@ var VERVE;
             scene.update();
         }
         render(scene) {
-            this.gl.clearColor(1, 0, 1, 1);
+            this.gl.clearColor(0, 1, 1, 1);
             this.gl.clear(this.gl.COLOR_BUFFER_BIT || this.gl.DEPTH_BUFFER_BIT);
             for (let object of scene._gameObject) {
                 this.loadObject(object);
@@ -630,7 +717,10 @@ var VERVE;
         uniform vec4 u_color;
         void main() {
             //gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+            // vec4 color = vec4(1.0, 1.0, 1.0, 1.0);
             gl_FragColor = texture2D(sampler, v_textureColor)*u_color;
+            // gl_FragColor = color*u_color;
+            // gl_FragColor.rgb *= gl_FragColor.a;
         }
         `;
             this.laod(this._vertexSource, this._fragmentSource);
@@ -648,24 +738,25 @@ renderer.setCamera(camera);
 let scene = new VERVE.Scene();
 let gameObject = new VERVE.GameObject();
 let geomentry = new VERVE.PlaneGeometry(500, 500);
-let Material = new VERVE.BasicMaterial("red");
+let material = new VERVE.BasicMaterial("#ff0000");
 let texture = new VERVE.TextureMaterial(imageForTexture);
-let spriteComponent = new VERVE.SpriteComponent(geomentry, Material);
+let spriteComponent = new VERVE.SpriteComponent(geomentry, material);
 let geomentry2 = new VERVE.PlaneGeometry(200, 200);
 let spriteComponent2 = new VERVE.SpriteComponent(geomentry2, texture);
 spriteComponent2.x = 400;
 spriteComponent2.y = 150;
 scene.addObject(gameObject);
-gameObject.addComponent(spriteComponent);
 gameObject.addComponent(spriteComponent2);
+gameObject.addComponent(spriteComponent);
 let updating = true;
+material.color = "rbga(255, 255, 0, 40)";
 function start() {
     requestAnimationFrame(start);
     if (updating)
         renderer.update();
     renderer.render(scene);
-    gameObject._transform.rotation.z += 0.01;
 }
+VERVE.Color.getColor("rbga(255, 45, 78, 20)");
 window.onload = () => {
     console.log(imageForTexture);
     renderer.tempFun();
