@@ -8,7 +8,6 @@ namespace VERVE {
         //     return this._color;
         // }
         public set color(value:string) {
-
             this._color = Color.getColor(value);
         }
         constructor(color:string) {
@@ -17,7 +16,7 @@ namespace VERVE {
         }
         public loadUniform(gl: WebGLRenderingContext, shader: Shader): void {
             let colorLocation = shader.getUniformLocation("u_color");
-            gl.uniform4fv(colorLocation, this._color.toFloatArray());
+            gl.uniform4fv(colorLocation, new Float32Array(this._color.toFloatArray()));
         }
     }
 }

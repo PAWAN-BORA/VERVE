@@ -1,48 +1,5 @@
 var VERVE;
 (function (VERVE) {
-    class Buffer {
-        constructor(gl) {
-            this._data = [];
-            this._indices = [];
-            this._gl = gl;
-            this._vertexBuffer = gl.createBuffer();
-            this._textureBuffer = gl.createBuffer();
-            this._indexBuffer = gl.createBuffer();
-        }
-        loadData(data, indices) {
-            this._data = data;
-            this._indices = indices;
-            this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._textureBuffer);
-            this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]), this._gl.STATIC_DRAW);
-            this._gl.vertexAttribPointer(1, 2, this._gl.FLOAT, false, 0, 0);
-            this._gl.enableVertexAttribArray(1);
-            this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._vertexBuffer);
-            this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array(this._data), this._gl.STATIC_DRAW);
-            this._gl.vertexAttribPointer(0, 2, this._gl.FLOAT, false, 0, 0);
-            this._gl.enableVertexAttribArray(0);
-            this._gl.bindBuffer(this._gl.ELEMENT_ARRAY_BUFFER, this._indexBuffer);
-            this._gl.bufferData(this._gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this._indices), this._gl.STATIC_DRAW);
-        }
-        enableVertex(location) {
-        }
-        bind() {
-            this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._vertexBuffer);
-            this._gl.vertexAttribPointer(0, 2, this._gl.FLOAT, false, 0, 0);
-            this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._textureBuffer);
-            this._gl.vertexAttribPointer(1, 2, this._gl.FLOAT, false, 0, 0);
-        }
-        unbind() {
-            this._gl.disableVertexAttribArray(0);
-            this._gl.bindBuffer(this._gl.ARRAY_BUFFER, null);
-        }
-        draw() {
-            this._gl.drawElements(this._gl.TRIANGLES, this._indices.length, this._gl.UNSIGNED_SHORT, 0);
-        }
-    }
-    VERVE.Buffer = Buffer;
-})(VERVE || (VERVE = {}));
-var VERVE;
-(function (VERVE) {
     class Camera {
         constructor(left, right, bottom, top) {
             this.projection = VERVE.Matrix4X4.orthographic(left, right, bottom, top, 0, 100);
@@ -109,7 +66,8 @@ var VERVE;
                 }
                 return new Color(r, g, b);
             }
-            return null;
+            console.error(`color format "${color}" is incorrect. setting white for the color`);
+            return new Color(255, 255, 255);
         }
     }
     VERVE.Color = Color;
@@ -139,14 +97,80 @@ var VERVE;
 })(VERVE || (VERVE = {}));
 var VERVE;
 (function (VERVE) {
+    class CircleGeometry extends VERVE.Geometry {
+        constructor(radius, segments) {
+            super();
+            this.setData(radius, segments);
+        }
+        setData(radius, segments) {
+            let angle = 2 * Math.PI / segments;
+            let data = [];
+            data.push(0, 0);
+            for (let i = 0; i < segments; i++) {
+                let x = radius * Math.cos(angle * i);
+                let y = radius * Math.sin(angle * i);
+                data.push(x, y);
+            }
+            this._data = data;
+            let indices = [];
+            for (let i = 0; i < segments; i++) {
+                let t1 = 0, t2 = i + 1, t3;
+                if (i === segments - 1) {
+                    t3 = 1;
+                }
+                else {
+                    t3 = i + 2;
+                }
+                indices.push(t1, t2, t3);
+            }
+            this._indices = indices;
+        }
+    }
+    VERVE.CircleGeometry = CircleGeometry;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class EllipseGeometry extends VERVE.Geometry {
+        constructor(r1, r2, segments) {
+            super();
+            this.setData(r1, r2, segments);
+        }
+        setData(r1, r2, segments) {
+            let angle = 2 * Math.PI / segments;
+            let data = [];
+            data.push(0, 0);
+            for (let i = 0; i < segments; i++) {
+                let x = r1 * Math.cos(angle * i);
+                let y = r2 * Math.sin(angle * i);
+                data.push(x, y);
+            }
+            this._data = data;
+            let indices = [];
+            for (let i = 0; i < segments; i++) {
+                let t1 = 0, t2 = i + 1, t3;
+                if (i === segments - 1) {
+                    t3 = 1;
+                }
+                else {
+                    t3 = i + 2;
+                }
+                indices.push(t1, t2, t3);
+            }
+            this._indices = indices;
+        }
+    }
+    VERVE.EllipseGeometry = EllipseGeometry;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
     class PlaneGeometry extends VERVE.Geometry {
         constructor(width, height) {
             super();
             this._data = [
-                0, 0,
-                width, 0,
-                width, height,
-                0, height
+                -width / 2, -height / 2,
+                width / 2, -height / 2,
+                width / 2, height / 2,
+                -width / 2, height / 2
             ];
             this._indices = [
                 0, 1, 2,
@@ -235,7 +259,7 @@ var VERVE;
         }
         loadUniform(gl, shader) {
             let colorLocation = shader.getUniformLocation("u_color");
-            gl.uniform4fv(colorLocation, this._color.toFloatArray());
+            gl.uniform4fv(colorLocation, new Float32Array(this._color.toFloatArray()));
         }
     }
     VERVE.BasicMaterial = BasicMaterial;
@@ -488,6 +512,54 @@ var VERVE;
 })(VERVE || (VERVE = {}));
 var VERVE;
 (function (VERVE) {
+    class ShapeComponent {
+        constructor(geometry, material) {
+            this.isLoading = true;
+            this._geometry = geometry;
+            this._material = material;
+            this._transform = new VERVE.Transform();
+        }
+        get x() {
+            return this._transform.position.x;
+        }
+        set x(val) {
+            this._transform.position.x = val;
+        }
+        get y() {
+            return this._transform.position.y;
+        }
+        set y(val) {
+            this._transform.position.y = val;
+        }
+        get rotate() {
+            return this._transform.rotation.z;
+        }
+        set rotate(val) {
+            this._transform.rotation.z = val;
+        }
+        load(gl) {
+            this._buffer = new VERVE.Buffer(gl);
+            this._buffer.loadData(this._geometry.data, this._geometry.indices);
+            this._material.texture = new VERVE.Texture(gl);
+        }
+        update() {
+            this._localMatrix = this._transform.getTranformationMatrix();
+        }
+        render(render) {
+            let model = VERVE.Matrix4X4.multiply(this.parent.worldMatrix, this._localMatrix);
+            let modelLocation = render.shader.getUniformLocation("u_model");
+            render.gl.uniformMatrix4fv(modelLocation, false, new Float32Array(model.data));
+            this._material.loadUniform(render.gl, render.shader);
+            this._material.texture.active();
+            this._buffer.bind();
+            this._buffer.draw();
+            this._buffer.unbind();
+        }
+    }
+    VERVE.ShapeComponent = ShapeComponent;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
     class SpriteComponent {
         constructor(geometry, material) {
             this.isLoading = true;
@@ -520,7 +592,7 @@ var VERVE;
             this._transform.rotation.z = val;
         }
         load(gl) {
-            this._buffer = new VERVE.Buffer(gl);
+            this._buffer = new VERVE.TextureBuffer(gl);
             this._buffer.loadData(this._geometry.data, this._geometry.indices);
             this._material.texture = new VERVE.Texture(gl);
             if (this._material instanceof VERVE.TextureMaterial) {
@@ -542,6 +614,42 @@ var VERVE;
         }
     }
     VERVE.SpriteComponent = SpriteComponent;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class Buffer {
+        constructor(gl) {
+            this._data = [];
+            this._indices = [];
+            this._gl = gl;
+            this._vertexBuffer = gl.createBuffer();
+            this._indexBuffer = gl.createBuffer();
+        }
+        loadData(data, indices) {
+            this._data = data;
+            this._indices = indices;
+            this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._vertexBuffer);
+            this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array(this._data), this._gl.STATIC_DRAW);
+            this._gl.vertexAttribPointer(0, 2, this._gl.FLOAT, false, 0, 0);
+            this._gl.bindBuffer(this._gl.ELEMENT_ARRAY_BUFFER, this._indexBuffer);
+            this._gl.bufferData(this._gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this._indices), this._gl.STATIC_DRAW);
+        }
+        bind() {
+            this._gl.bindBuffer(this._gl.ELEMENT_ARRAY_BUFFER, this._indexBuffer);
+            this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._vertexBuffer);
+            this._gl.vertexAttribPointer(0, 2, this._gl.FLOAT, false, 0, 0);
+            this._gl.enableVertexAttribArray(0);
+        }
+        unbind() {
+            this._gl.disableVertexAttribArray(0);
+            this._gl.disableVertexAttribArray(1);
+            this._gl.bindBuffer(this._gl.ARRAY_BUFFER, null);
+        }
+        draw() {
+            this._gl.drawElements(this._gl.TRIANGLES, this._indices.length, this._gl.UNSIGNED_SHORT, 0);
+        }
+    }
+    VERVE.Buffer = Buffer;
 })(VERVE || (VERVE = {}));
 var VERVE;
 (function (VERVE) {
@@ -621,6 +729,29 @@ var VERVE;
         }
     }
     VERVE.Renderer = Renderer;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class TextureBuffer extends VERVE.Buffer {
+        constructor(gl) {
+            super(gl);
+            this._textureBuffer = gl.createBuffer();
+        }
+        loadData(data, indices) {
+            super.loadData(data, indices);
+            this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._textureBuffer);
+            this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]), this._gl.STATIC_DRAW);
+            this._gl.vertexAttribPointer(1, 2, this._gl.FLOAT, false, 0, 0);
+        }
+        bind() {
+            super.bind();
+            this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._textureBuffer);
+            this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]), this._gl.STATIC_DRAW);
+            this._gl.vertexAttribPointer(1, 2, this._gl.FLOAT, false, 0, 0);
+            this._gl.enableVertexAttribArray(1);
+        }
+    }
+    VERVE.TextureBuffer = TextureBuffer;
 })(VERVE || (VERVE = {}));
 var VERVE;
 (function (VERVE) {
@@ -730,24 +861,43 @@ var VERVE;
 })(VERVE || (VERVE = {}));
 let imageForTexture = new Image();
 imageForTexture.src = `Assets/Textures/star2.png`;
-imageForTexture.onload = () => {
-};
 let renderer = new VERVE.Renderer("canvas");
 let camera = new VERVE.Camera(0, renderer.canvas.width, renderer.canvas.height, 0);
+let renderer2 = new VERVE.Renderer();
+document.body.appendChild(renderer2.canvas);
+renderer2.setCamera(camera);
 renderer.setCamera(camera);
 let scene = new VERVE.Scene();
 let gameObject = new VERVE.GameObject();
 let geomentry = new VERVE.PlaneGeometry(500, 500);
 let material = new VERVE.BasicMaterial("#ff0000");
 let texture = new VERVE.TextureMaterial(imageForTexture);
-let spriteComponent = new VERVE.SpriteComponent(geomentry, material);
+let spriteComponent = new VERVE.ShapeComponent(geomentry, material);
 let geomentry2 = new VERVE.PlaneGeometry(200, 200);
 let spriteComponent2 = new VERVE.SpriteComponent(geomentry2, texture);
-spriteComponent2.x = 400;
-spriteComponent2.y = 150;
+spriteComponent2.x = 200;
+spriteComponent2.y = 50;
+let circle = new VERVE.CircleGeometry(100, 8);
+let circleMaterial = new VERVE.BasicMaterial("#ff2556");
+let spriteComponent3 = new VERVE.ShapeComponent(circle, circleMaterial);
+let ellipse = new VERVE.EllipseGeometry(280, 100, 100);
+let ellipseMaterial = new VERVE.BasicMaterial("#05a478");
+let ellispeComponent = new VERVE.ShapeComponent(ellipse, ellipseMaterial);
+let gameObject2 = new VERVE.GameObject();
+gameObject2.addComponent(ellispeComponent);
+gameObject2.addComponent(spriteComponent3);
+gameObject2.x = 400;
+gameObject2.y = 300;
+gameObject.x = 300;
+gameObject.y = 300;
+spriteComponent3.rotate = Math.PI / 4;
+spriteComponent2.rotate = 20;
+scene.addObject(gameObject2);
 scene.addObject(gameObject);
 gameObject.addComponent(spriteComponent2);
 gameObject.addComponent(spriteComponent);
+let scene2 = new VERVE.Scene();
+scene2.addObject(gameObject);
 let updating = true;
 material.color = "rbga(255, 255, 0, 40)";
 function start() {
@@ -755,6 +905,10 @@ function start() {
     if (updating)
         renderer.update();
     renderer.render(scene);
+    gameObject.rotate += 0.01;
+    ellispeComponent.rotate -= 0.01;
+    spriteComponent3.rotate += 0.01;
+    spriteComponent2.rotate += Math.PI / 180 * 1;
 }
 VERVE.Color.getColor("rbga(255, 45, 78, 20)");
 window.onload = () => {

@@ -44,11 +44,11 @@ namespace VERVE {
             }
             this.isLoading = false; // should be think about this.
         } 
-        public addComponent(component:SpriteComponent):void {
+        public addComponent(component:IComponent):void {
             this._component.push(component);
             component.parent = this;
         }
-        public removeComponent(component:SpriteComponent):void {
+        public removeComponent(component:IComponent):void {
             let index = this._component.indexOf(component);
             if(index!==-1){
                 this._component.splice(index, 1);

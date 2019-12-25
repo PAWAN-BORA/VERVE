@@ -59,7 +59,8 @@ namespace VERVE {
                 }
                 return new Color(r, g, b);
             }
-            return null;
+            console.error(`color format "${color}" is incorrect. setting white for the color`)
+            return new Color(255, 255, 255);
         }
     }
 }
