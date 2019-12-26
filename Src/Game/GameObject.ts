@@ -30,6 +30,10 @@ namespace VERVE {
         public set rotate(value:number) {
             this._transform.rotation.z = value;
         }
+        public scale(x:number, y:number) {
+            this._transform.scale.x = x;
+            this._transform.scale.y = y;
+        }
         constructor() {
             this._transform = new Transform();
             this.worldMatrix = this._transform.getTranformationMatrix(); 
@@ -54,10 +58,10 @@ namespace VERVE {
                 this._component.splice(index, 1);
             }
         }
-        public update():void {
+        public update(delta:number):void {
             this.worldMatrix = this._transform.getTranformationMatrix();
             for(let c of this._component){
-                c.update();
+                c.update(delta);
             }
         }
         public render(render:Renderer):void {

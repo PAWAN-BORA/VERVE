@@ -36,7 +36,10 @@ namespace VERVE {
             
             this._transform.rotation.z = val;
         }
-        
+        public scale(x:number, y:number) {
+            this._transform.scale.x = x;
+            this._transform.scale.y = y;
+        }
         public isLoading:boolean = true;
         constructor(geometry:Geometry, material:Material) {
             this._geometry = geometry;
@@ -57,7 +60,7 @@ namespace VERVE {
             }
             this._material.texture.active();
         }
-        public update():void {
+        public update(delta:number):void {
             this._localMatrix = this._transform.getTranformationMatrix();
         }
         public render(render:Renderer):void {

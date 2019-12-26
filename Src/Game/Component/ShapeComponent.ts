@@ -27,6 +27,10 @@ namespace VERVE {
             
             this._transform.rotation.z = val;
         }
+        public scale(x:number, y:number) {
+            this._transform.scale.x = x;
+            this._transform.scale.y = y;
+        }
         constructor(geometry:Geometry, material:Material) {
             this._geometry = geometry;
             this._material = material;
@@ -37,7 +41,7 @@ namespace VERVE {
             this._buffer.loadData(this._geometry.data, this._geometry.indices);
             this._material.texture = new Texture(gl);
         }
-        update(): void {
+        update(delta:number): void {
             this._localMatrix = this._transform.getTranformationMatrix();
         }
         render(render: Renderer): void {

@@ -8,6 +8,9 @@ namespace VERVE {
         private _sprite:Sprite; 
         private _camera:Camera;
         // end
+        private _startTime:number = 0;
+        private _frames:number = 0;
+        private _totalTime:number = 0;
         constructor(CanvasId?:string) {
             let canvasData = new Canvas(CanvasId);
             this.canvas = canvasData.getCanvas();
@@ -40,8 +43,22 @@ namespace VERVE {
                 gameObject.isLoading = false;
             }
         }
+        private showFPS(delta:number):void {
+            this._totalTime += delta;
+            this._frames++;
+            if(this._totalTime>1000) {
+                console.log(this._frames);
+                this._totalTime = 0;
+                this._frames = 0;
+            }
+        }
         public update():void {
-            scene.update();
+            let endTime = performance.now();
+            let delta = endTime - this._startTime;
+            scene.update(delta);
+            // this.showFPS(delta);
+            
+            this._startTime = endTime;
         }
         public render(scene:Scene):void {
             // this.gl.colorMask(false, false, false, true);

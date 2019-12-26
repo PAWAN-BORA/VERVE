@@ -3,7 +3,7 @@ namespace VERVE {
         private _gameObject:GameObject[] = [];
         private _renderer:Renderer;
         private _sprite:Sprite; // temp;
-        
+        public isLoading:boolean = true;
         constructor() {
             
         }
@@ -18,9 +18,9 @@ namespace VERVE {
         public addObject(gameObject:GameObject):void {
             this._gameObject.push(gameObject);
         }
-        public update():void {
+        public update(delta:number):void {
             for(let g of this._gameObject) {
-                g.update();
+                g.update(delta);
             }
         }
         public render(renderer:Renderer):void {

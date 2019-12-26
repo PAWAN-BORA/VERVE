@@ -1,5 +1,6 @@
 /// <reference path="Src/Game/Scene.ts"/>
 /// <reference path="Src/Game/Component/SpriteComponent.ts"/>
+/// <reference path="Src/Game/Component/AnimatedComponent.ts"/>
 /// <reference path="Src/Game/Component/ShapeComponent.ts"/>
 /// <reference path="Src/Core/Geometry/PlaneGeometry.ts"/>
 /// <reference path="Src/Core/Geometry/CircleGeometry.ts"/>
@@ -7,6 +8,8 @@
 /// <reference path="Src/Core/Color/Color.ts"/>
 let imageForTexture = new Image();
 imageForTexture.src = `Assets/Textures/star2.png`;
+let spriteImage = new Image();
+spriteImage.src = `Assets/Textures/spriteSheet.png`;
 let renderer = new VERVE.Renderer("canvas");
 let camera = new VERVE.Camera(0, renderer.canvas.width, renderer.canvas.height, 0);
 
@@ -57,6 +60,33 @@ scene2.addObject(gameObject)
 // ellispeComponent.rotate = Math.PI/2;
 let updating = true;
 material.color = "rbga(255, 255, 0, 40)";
+let animateMaterial = new VERVE.TextureMaterial(spriteImage);
+let animateSprite = new VERVE.AnimatedComponent(108, 140, 2, 8, animateMaterial);
+animateSprite.startAnimation = true;
+let frameSequence = [
+    {x:1, y:1},
+    {x:2, y:1},
+    {x:3, y:1},
+    {x:4, y:1},
+    {x:5, y:1},
+    {x:6, y:1},
+    {x:7, y:1},
+    {x:8, y:1},
+    {x:1, y:2},
+    {x:2, y:2},
+    {x:3, y:2},
+    {x:4, y:2},
+    {x:5, y:2},
+    {x:6, y:2},
+    {x:7, y:2},
+    {x:8, y:2},
+]
+animateSprite.setFrameSequence(frameSequence);
+let gameObject3 = new VERVE.GameObject();
+gameObject3.x = 320;
+gameObject3.y = 190;
+gameObject3.addComponent(animateSprite);
+scene.addObject(gameObject3);
 function start() {
     
     requestAnimationFrame(start);
@@ -79,3 +109,16 @@ window.onload = ()=>{
     // renderer2.tempFun();
     start();
 }
+let content:string;
+let xhttp = new XMLHttpRequest();
+xhttp.onreadystatechange = function () {
+    if(this.readyState==4 && this.status===200) {
+        content = xhttp.responseText;
+        let font = new VERVE.BitmapFont(content);
+    } else {
+        console.log(this.readyState);
+        console.log(this.status);
+    }
+};
+xhttp.open("GET", "Assets/Font/font.fnt");
+xhttp.send();

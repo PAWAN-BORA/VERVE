@@ -182,6 +182,72 @@ var VERVE;
 })(VERVE || (VERVE = {}));
 var VERVE;
 (function (VERVE) {
+    function getNumber(field) {
+        return Number(field.split("=")[1]);
+    }
+    class FontGlyph {
+        constructor() {
+        }
+        get id() {
+            return this._id;
+        }
+        set id(value) {
+            this._id = value;
+        }
+        static getGlyphFromField(field) {
+            let fontFlyph = new FontGlyph();
+            fontFlyph._id = getNumber(field[1]);
+            fontFlyph._x = getNumber(field[2]);
+            fontFlyph._y = getNumber(field[3]);
+            fontFlyph._width = getNumber(field[4]);
+            fontFlyph._height = getNumber(field[5]);
+            fontFlyph._xOffset = getNumber(field[6]);
+            fontFlyph._yOffset = getNumber(field[7]);
+            fontFlyph._xAdvanced = getNumber(field[8]);
+            return fontFlyph;
+        }
+    }
+    VERVE.FontGlyph = FontGlyph;
+    class BitmapFont {
+        constructor(content) {
+            this._glyphs = {};
+            this.prossesFontFile(content);
+        }
+        getGlyph(char) {
+            let code = char.charCodeAt(0);
+            return this._glyphs[code];
+        }
+        measureText() {
+        }
+        prossesFontFile(content) {
+            let charCount = 0;
+            let lines = content.split('\n');
+            for (let line of lines) {
+                let data = line.replace(/\s\s+/g, ' ');
+                let fields = data.split(' ');
+                switch (fields[0]) {
+                    case "info":
+                        break;
+                    case "common":
+                        break;
+                    case "chars":
+                        charCount = getNumber(fields[1]);
+                        break;
+                    case "char":
+                        let glyph = FontGlyph.getGlyphFromField(fields);
+                        this._glyphs[glyph.id] = glyph;
+                        break;
+                    default:
+                        break;
+                }
+            }
+            console.log(this._glyphs);
+        }
+    }
+    VERVE.BitmapFont = BitmapFont;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
     class Sprite {
         constructor(geometry, material) {
             this._data = [];
@@ -453,6 +519,10 @@ var VERVE;
         set rotate(value) {
             this._transform.rotation.z = value;
         }
+        scale(x, y) {
+            this._transform.scale.x = x;
+            this._transform.scale.y = y;
+        }
         load(gl) {
             for (let c of this._component) {
                 if (c.isLoading) {
@@ -472,10 +542,10 @@ var VERVE;
                 this._component.splice(index, 1);
             }
         }
-        update() {
+        update(delta) {
             this.worldMatrix = this._transform.getTranformationMatrix();
             for (let c of this._component) {
-                c.update();
+                c.update(delta);
             }
         }
         render(render) {
@@ -491,15 +561,16 @@ var VERVE;
     class Scene {
         constructor() {
             this._gameObject = [];
+            this.isLoading = true;
         }
         BeforeRender(renderer) {
         }
         addObject(gameObject) {
             this._gameObject.push(gameObject);
         }
-        update() {
+        update(delta) {
             for (let g of this._gameObject) {
-                g.update();
+                g.update(delta);
             }
         }
         render(renderer) {
@@ -509,6 +580,117 @@ var VERVE;
         }
     }
     VERVE.Scene = Scene;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class AnimatedComponent {
+        constructor(width, height, row, column, material) {
+            this._frameSequence = [];
+            this.frameTime = 200;
+            this.isLoading = true;
+            this.startAnimation = false;
+            this._totalTime = 0;
+            this._num = 0;
+            this._geometry = new VERVE.PlaneGeometry(width, height);
+            this._material = material;
+            this._transform = new VERVE.Transform();
+            this._row = row;
+            this._column = column;
+            this.getWidthAndHeight();
+        }
+        get buffer() {
+            return this._buffer;
+        }
+        set buffer(value) {
+            this._buffer = value;
+        }
+        get x() {
+            return this._transform.position.x;
+        }
+        set x(val) {
+            this._transform.position.x = val;
+        }
+        get y() {
+            return this._transform.position.y;
+        }
+        set y(val) {
+            this._transform.position.y = val;
+        }
+        get rotate() {
+            return this._transform.rotation.z;
+        }
+        set rotate(val) {
+            this._transform.rotation.z = val;
+        }
+        scale(x, y) {
+            this._transform.scale.x = x;
+            this._transform.scale.y = y;
+        }
+        getWidthAndHeight() {
+            this._frameWidth = 1 / this._column;
+            this._frameHeight = 1 / this._row;
+        }
+        setFrameSequence(frameSequence) {
+            for (let f of frameSequence) {
+                if (f.x > this._column) {
+                    console.error(`${f.x} is out of range in frame sequnce`);
+                }
+                if (f.y > this._row) {
+                    console.error(`${f.y} is out of range in frame sequunce`);
+                }
+            }
+            this._frameSequence = frameSequence;
+        }
+        load(gl) {
+            this._buffer = new VERVE.TextureBuffer(gl);
+            this._buffer.loadData(this._geometry.data, this._geometry.indices, [0, 0,
+                this._frameWidth, 0,
+                this._frameWidth, this._frameHeight,
+                0, this._frameHeight
+            ]);
+            this._material.texture = new VERVE.Texture(gl);
+            if (this._material instanceof VERVE.TextureMaterial) {
+                this._material.loadTexture();
+            }
+            this._material.texture.active();
+        }
+        changeFrame(x, y) {
+            let data = [
+                (x) * this._frameWidth, (y) * this._frameHeight,
+                (x + 1) * this._frameWidth, (y) * this._frameHeight,
+                (x + 1) * this._frameWidth, (y + 1) * this._frameHeight,
+                (x) * this._frameWidth, (y + 1) * this._frameHeight
+            ];
+            if (this._buffer != undefined) {
+                this.buffer.changeTextureChord(data);
+            }
+        }
+        update(delta) {
+            this._localMatrix = this._transform.getTranformationMatrix();
+            if (this.startAnimation) {
+                this._totalTime += delta;
+                if (this._totalTime > this.frameTime) {
+                    this._totalTime = 0;
+                    let frameNum = this._frameSequence[this._num];
+                    this.changeFrame(frameNum.x - 1, frameNum.y - 1);
+                    this._num++;
+                    if (this._num >= this._frameSequence.length) {
+                        this._num = 0;
+                    }
+                }
+            }
+        }
+        render(render) {
+            let model = VERVE.Matrix4X4.multiply(this.parent.worldMatrix, this._localMatrix);
+            let modelLocation = render.shader.getUniformLocation("u_model");
+            render.gl.uniformMatrix4fv(modelLocation, false, new Float32Array(model.data));
+            this._material.loadUniform(render.gl, render.shader);
+            this._material.texture.active();
+            this._buffer.bind();
+            this._buffer.draw();
+        }
+    }
+    VERVE.AnimatedComponent = AnimatedComponent;
 })(VERVE || (VERVE = {}));
 var VERVE;
 (function (VERVE) {
@@ -537,12 +719,16 @@ var VERVE;
         set rotate(val) {
             this._transform.rotation.z = val;
         }
+        scale(x, y) {
+            this._transform.scale.x = x;
+            this._transform.scale.y = y;
+        }
         load(gl) {
             this._buffer = new VERVE.Buffer(gl);
             this._buffer.loadData(this._geometry.data, this._geometry.indices);
             this._material.texture = new VERVE.Texture(gl);
         }
-        update() {
+        update(delta) {
             this._localMatrix = this._transform.getTranformationMatrix();
         }
         render(render) {
@@ -591,6 +777,10 @@ var VERVE;
         set rotate(val) {
             this._transform.rotation.z = val;
         }
+        scale(x, y) {
+            this._transform.scale.x = x;
+            this._transform.scale.y = y;
+        }
         load(gl) {
             this._buffer = new VERVE.TextureBuffer(gl);
             this._buffer.loadData(this._geometry.data, this._geometry.indices);
@@ -600,7 +790,7 @@ var VERVE;
             }
             this._material.texture.active();
         }
-        update() {
+        update(delta) {
             this._localMatrix = this._transform.getTranformationMatrix();
         }
         render(render) {
@@ -690,6 +880,9 @@ var VERVE;
 (function (VERVE) {
     class Renderer {
         constructor(CanvasId) {
+            this._startTime = 0;
+            this._frames = 0;
+            this._totalTime = 0;
             let canvasData = new VERVE.Canvas(CanvasId);
             this.canvas = canvasData.getCanvas();
             this.gl = canvasData.getContext();
@@ -716,8 +909,20 @@ var VERVE;
                 gameObject.isLoading = false;
             }
         }
+        showFPS(delta) {
+            this._totalTime += delta;
+            this._frames++;
+            if (this._totalTime > 1000) {
+                console.log(this._frames);
+                this._totalTime = 0;
+                this._frames = 0;
+            }
+        }
         update() {
-            scene.update();
+            let endTime = performance.now();
+            let delta = endTime - this._startTime;
+            scene.update(delta);
+            this._startTime = endTime;
         }
         render(scene) {
             this.gl.clearColor(0, 1, 1, 1);
@@ -737,16 +942,20 @@ var VERVE;
             super(gl);
             this._textureBuffer = gl.createBuffer();
         }
-        loadData(data, indices) {
+        loadData(data, indices, textureCord = [0, 0, 1, 0, 1, 1, 0, 1]) {
             super.loadData(data, indices);
+            this._textrueCord = textureCord;
             this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._textureBuffer);
-            this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]), this._gl.STATIC_DRAW);
+            this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array(this._textrueCord), this._gl.STATIC_DRAW);
             this._gl.vertexAttribPointer(1, 2, this._gl.FLOAT, false, 0, 0);
+        }
+        changeTextureChord(data) {
+            this._textrueCord = data;
+            this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array(this._textrueCord), this._gl.STATIC_DRAW);
         }
         bind() {
             super.bind();
             this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._textureBuffer);
-            this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]), this._gl.STATIC_DRAW);
             this._gl.vertexAttribPointer(1, 2, this._gl.FLOAT, false, 0, 0);
             this._gl.enableVertexAttribArray(1);
         }
@@ -861,6 +1070,8 @@ var VERVE;
 })(VERVE || (VERVE = {}));
 let imageForTexture = new Image();
 imageForTexture.src = `Assets/Textures/star2.png`;
+let spriteImage = new Image();
+spriteImage.src = `Assets/Textures/spriteSheet.png`;
 let renderer = new VERVE.Renderer("canvas");
 let camera = new VERVE.Camera(0, renderer.canvas.width, renderer.canvas.height, 0);
 let renderer2 = new VERVE.Renderer();
@@ -900,6 +1111,33 @@ let scene2 = new VERVE.Scene();
 scene2.addObject(gameObject);
 let updating = true;
 material.color = "rbga(255, 255, 0, 40)";
+let animateMaterial = new VERVE.TextureMaterial(spriteImage);
+let animateSprite = new VERVE.AnimatedComponent(108, 140, 2, 8, animateMaterial);
+animateSprite.startAnimation = true;
+let frameSequence = [
+    { x: 1, y: 1 },
+    { x: 2, y: 1 },
+    { x: 3, y: 1 },
+    { x: 4, y: 1 },
+    { x: 5, y: 1 },
+    { x: 6, y: 1 },
+    { x: 7, y: 1 },
+    { x: 8, y: 1 },
+    { x: 1, y: 2 },
+    { x: 2, y: 2 },
+    { x: 3, y: 2 },
+    { x: 4, y: 2 },
+    { x: 5, y: 2 },
+    { x: 6, y: 2 },
+    { x: 7, y: 2 },
+    { x: 8, y: 2 },
+];
+animateSprite.setFrameSequence(frameSequence);
+let gameObject3 = new VERVE.GameObject();
+gameObject3.x = 320;
+gameObject3.y = 190;
+gameObject3.addComponent(animateSprite);
+scene.addObject(gameObject3);
 function start() {
     requestAnimationFrame(start);
     if (updating)
@@ -916,4 +1154,18 @@ window.onload = () => {
     renderer.tempFun();
     start();
 };
+let content;
+let xhttp = new XMLHttpRequest();
+xhttp.onreadystatechange = function () {
+    if (this.readyState == 4 && this.status === 200) {
+        content = xhttp.responseText;
+        let font = new VERVE.BitmapFont(content);
+    }
+    else {
+        console.log(this.readyState);
+        console.log(this.status);
+    }
+};
+xhttp.open("GET", "Assets/Font/font.fnt");
+xhttp.send();
 //# sourceMappingURL=VERVE.js.map

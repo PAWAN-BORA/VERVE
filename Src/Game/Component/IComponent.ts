@@ -3,7 +3,7 @@ namespace VERVE {
         parent:GameObject;
         isLoading:boolean;
         load(gl:WebGLRenderingContext):void;
-        update():void;
+        update(delta:number):void;
         render(render:Renderer):void;
     }
 }
