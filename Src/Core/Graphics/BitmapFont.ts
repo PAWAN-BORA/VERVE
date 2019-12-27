@@ -32,6 +32,20 @@ namespace VERVE {
     export class BitmapFont {
         private _fontImage:HTMLImageElement;
         private _fileName:string;
+        private _width: number;
+        public get width(): number {
+            return this._width;
+        }
+        // public set width(value: number) {
+        //     this._width = value;
+        // }
+        private _height: number;
+        public get height(): number {
+            return this._height;
+        }
+        // public set height(value: number) {
+        //     this._height = value;
+        // }
         private _glyphs:{[id:number]:FontGlyph} = {};
         constructor(content:string) {
             this.prossesFontFile(content)
@@ -56,6 +70,8 @@ namespace VERVE {
                         
                         break;
                     case "common":
+                        this._width = getNumber(fields[3])
+                        this._height = getNumber(fields[4])
                         break;
                     case "chars":
                         charCount = getNumber(fields[1]);

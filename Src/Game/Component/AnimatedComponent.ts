@@ -93,6 +93,7 @@ namespace VERVE {
                 (x)*this._frameWidth,     (y+1)*this._frameHeight
             ]
             if(this._buffer!=undefined) {
+                // this._material.texture.active();
                 this.buffer.changeTextureChord(data); // might be change later;
             }
         }

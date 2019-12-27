@@ -19,6 +19,7 @@ namespace VERVE {
         public changeTextureChord(data:number[]):void {
             this._textrueCord = data;
             // should be modifed;
+            this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._textureBuffer);
             this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array(this._textrueCord), this._gl.STATIC_DRAW);
         }
         public bind():void {

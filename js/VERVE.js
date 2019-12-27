@@ -207,6 +207,12 @@ var VERVE;
             this._glyphs = {};
             this.prossesFontFile(content);
         }
+        get width() {
+            return this._width;
+        }
+        get height() {
+            return this._height;
+        }
         getGlyph(char) {
             let code = char.charCodeAt(0);
             return this._glyphs[code];
@@ -223,6 +229,8 @@ var VERVE;
                     case "info":
                         break;
                     case "common":
+                        this._width = getNumber(fields[3]);
+                        this._height = getNumber(fields[4]);
                         break;
                     case "chars":
                         charCount = getNumber(fields[1]);
@@ -239,31 +247,6 @@ var VERVE;
         }
     }
     VERVE.BitmapFont = BitmapFont;
-})(VERVE || (VERVE = {}));
-var VERVE;
-(function (VERVE) {
-    class BitmapText {
-        constructor(geometry, indices, material) {
-            this._geometry = geometry;
-            this._material = material;
-            this._textureIndices = indices;
-        }
-        load(gl) {
-            this._buffer = new VERVE.TextureBuffer(gl);
-            this._buffer.loadData(this._geometry.data, this._geometry.indices, this._textureIndices);
-            this._material.texture = new VERVE.Texture(gl);
-            if (this._material instanceof VERVE.TextureMaterial) {
-                this._material.loadTexture();
-            }
-            this._material.texture.active();
-        }
-        draw(model) {
-            this._material.texture.active();
-            this._buffer.bind();
-            this._buffer.draw();
-        }
-    }
-    VERVE.BitmapText = BitmapText;
 })(VERVE || (VERVE = {}));
 var VERVE;
 (function (VERVE) {
@@ -827,12 +810,11 @@ var VERVE;
 var VERVE;
 (function (VERVE) {
     class TextComponent {
-        constructor(text, data) {
-            this._bitmapText = [];
+        constructor(text, data, image) {
             this.isLoading = true;
             this._text = text;
             this._transform = new VERVE.Transform();
-            this._material = new VERVE.BasicMaterial("#445566");
+            this._material = new VERVE.TextureMaterial(image);
             this._BitmapFont = new VERVE.BitmapFont(data);
         }
         get x() {
@@ -857,23 +839,95 @@ var VERVE;
             this._transform.scale.x = x;
             this._transform.scale.y = y;
         }
-        getGlyphs() {
+        center() {
+            this._transform.position.x = -this._width / 2;
         }
-        load(gl) {
+        changeText(text) {
+            this._text = text;
+            let vertexData = [];
+            let textrueData = [];
+            let indicesData = [];
+            let x = 0, y = 0, indiNum = 0;
             for (let i = 0; i < this._text.length; i++) {
                 let glyph = this._BitmapFont.getGlyph(this._text.charAt(i));
-                console.log(glyph.width, glyph.height);
-                let geometry = new VERVE.PlaneGeometry(glyph.width, glyph.height);
-                let indices = [
-                    glyph.x / 256, glyph.y / 256,
-                    (glyph.x + glyph.width) / 256, glyph.y / 256,
-                    (glyph.x + glyph.width) / 256, (glyph.y + glyph.height) / 256,
-                    (glyph.x) / 256, (glyph.y + glyph.height) / 256,
+                let left = x + glyph.xOffset;
+                let top = y + glyph.yOffset;
+                let data = [
+                    left, top,
+                    left + glyph.width, top,
+                    left + glyph.width, top + glyph.height,
+                    left, top + glyph.height,
                 ];
-                this._bitmapText[i] = new VERVE.BitmapText(geometry, indices, this._material);
-                this._bitmapText[i].load(gl);
+                let textrue = [
+                    glyph.x / this._BitmapFont.width, glyph.y / this._BitmapFont.height,
+                    (glyph.x + glyph.width) / this._BitmapFont.width, glyph.y / this._BitmapFont.height,
+                    (glyph.x + glyph.width) / this._BitmapFont.width, (glyph.y + glyph.height) / this._BitmapFont.height,
+                    (glyph.x) / this._BitmapFont.width, (glyph.y + glyph.height) / this._BitmapFont.height,
+                ];
+                let indices = [
+                    0 + indiNum, 1 + indiNum, 2 + indiNum,
+                    2 + indiNum, 3 + indiNum, 0 + indiNum
+                ];
+                for (let d of data) {
+                    vertexData.push(d);
+                }
+                for (let t of textrue) {
+                    textrueData.push(t);
+                }
+                for (let i of indices) {
+                    indicesData.push(i);
+                }
+                x += glyph.xAdvanced;
+                indiNum += 4;
             }
-            console.log(this._bitmapText);
+            this._width = x;
+            this._buffer.loadData(vertexData, indicesData, textrueData);
+        }
+        load(gl) {
+            this._buffer = new VERVE.TextureBuffer(gl);
+            let vertexData = [];
+            let textrueData = [];
+            let indicesData = [];
+            console.log(this._BitmapFont.width, this._BitmapFont.height);
+            let x = 0, y = 0, indiNum = 0;
+            for (let i = 0; i < this._text.length; i++) {
+                let glyph = this._BitmapFont.getGlyph(this._text.charAt(i));
+                let left = x + glyph.xOffset;
+                let top = y + glyph.yOffset;
+                let data = [
+                    left, top,
+                    left + glyph.width, top,
+                    left + glyph.width, top + glyph.height,
+                    left, top + glyph.height,
+                ];
+                let textrue = [
+                    glyph.x / this._BitmapFont.width, glyph.y / this._BitmapFont.height,
+                    (glyph.x + glyph.width) / this._BitmapFont.width, glyph.y / this._BitmapFont.height,
+                    (glyph.x + glyph.width) / this._BitmapFont.width, (glyph.y + glyph.height) / this._BitmapFont.height,
+                    (glyph.x) / this._BitmapFont.width, (glyph.y + glyph.height) / this._BitmapFont.height,
+                ];
+                let indices = [
+                    0 + indiNum, 1 + indiNum, 2 + indiNum,
+                    2 + indiNum, 3 + indiNum, 0 + indiNum
+                ];
+                for (let d of data) {
+                    vertexData.push(d);
+                }
+                for (let t of textrue) {
+                    textrueData.push(t);
+                }
+                for (let i of indices) {
+                    indicesData.push(i);
+                }
+                x += glyph.xAdvanced;
+                indiNum += 4;
+            }
+            this._width = x;
+            this._buffer.loadData(vertexData, indicesData, textrueData);
+            this._material.texture = new VERVE.Texture(gl);
+            if (this._material instanceof VERVE.TextureMaterial) {
+                this._material.loadTexture();
+            }
         }
         update(delta) {
             this._localMatrix = this._transform.getTranformationMatrix();
@@ -883,9 +937,9 @@ var VERVE;
             let modelLocation = render.shader.getUniformLocation("u_model");
             render.gl.uniformMatrix4fv(modelLocation, false, new Float32Array(model.data));
             this._material.loadUniform(render.gl, render.shader);
-            for (let b of this._bitmapText) {
-                b.draw(model);
-            }
+            this._material.texture.active();
+            this._buffer.bind();
+            this._buffer.draw();
         }
     }
     VERVE.TextComponent = TextComponent;
@@ -1036,6 +1090,7 @@ var VERVE;
         }
         changeTextureChord(data) {
             this._textrueCord = data;
+            this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._textureBuffer);
             this._gl.bufferData(this._gl.ARRAY_BUFFER, new Float32Array(this._textrueCord), this._gl.STATIC_DRAW);
         }
         bind() {
@@ -1229,6 +1284,7 @@ function start() {
         renderer.update();
     renderer.render(scene);
     gameObject.rotate += 0.01;
+    gameObject4.rotate += 0.01;
     ellispeComponent.rotate -= 0.01;
     spriteComponent3.rotate += 0.01;
     spriteComponent2.rotate += Math.PI / 180 * 1;
@@ -1242,11 +1298,16 @@ window.onload = () => {
 let textComponent;
 let content;
 let gameObject4 = new VERVE.GameObject();
+gameObject4.x = 300;
+gameObject4.y = 200;
+let fontImage = new Image();
+fontImage.src = `Assets/Font/font_0.png`;
+let text = "THIS IS TEXT";
 let xhttp = new XMLHttpRequest();
 xhttp.onreadystatechange = function () {
     if (this.readyState == 4 && this.status === 200) {
         content = xhttp.responseText;
-        textComponent = new VERVE.TextComponent("This", content);
+        textComponent = new VERVE.TextComponent(text, content, fontImage);
         gameObject4.addComponent(textComponent);
         scene.addObject(gameObject4);
     }

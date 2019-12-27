@@ -96,12 +96,14 @@ function start() {
     renderer.render(scene);
     // spriteComponent2.x += 1;
     gameObject.rotate += 0.01;
+    gameObject4.rotate += 0.01;
     ellispeComponent.rotate -= 0.01;
     // gameObject2.rotate += 0.02;
     spriteComponent3.rotate += 0.01;
     spriteComponent2.rotate += Math.PI/180*1;
     // console.log(spriteComponent2.rotate)
 }
+
 VERVE.Color.getColor("rbga(255, 45, 78, 20)");
 window.onload = ()=>{
     console.log(imageForTexture);
@@ -112,13 +114,19 @@ window.onload = ()=>{
 let textComponent:VERVE.TextComponent;
 let content:string;
 let gameObject4 = new VERVE.GameObject();
-
+// gameObject4.scale(5, 5);
+gameObject4.x = 300;
+gameObject4.y = 200;
+let fontImage = new Image();
+fontImage.src =  `Assets/Font/font_0.png`;
+let text = "THIS IS TEXT";
 let xhttp = new XMLHttpRequest();
 xhttp.onreadystatechange = function () {
     if(this.readyState==4 && this.status===200) {
         content = xhttp.responseText;
-        textComponent = new VERVE.TextComponent("This", content);
+        textComponent = new VERVE.TextComponent(text, content, fontImage);
         gameObject4.addComponent(textComponent);
+        // textComponent.x = -50;
         scene.addObject(gameObject4);
     } else {
         console.log(this.readyState);
