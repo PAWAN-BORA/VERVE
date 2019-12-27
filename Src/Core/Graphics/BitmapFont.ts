@@ -4,39 +4,33 @@ namespace VERVE {
         return Number(field.split("=")[1]);
     }
     export class FontGlyph {
-        private _id: number;
-        public get id(): number {
-            return this._id;
-        }
-        public set id(value: number) {
-            this._id = value;
-        }
-        private _x:number;
-        private _y:number;
-        private _width:number;
-        private _height:number;
-        private _xOffset:number;
-        private _yOffset:number;
-        private _xAdvanced:number;
+        public id: number;
+        public x:number;
+        public y:number;
+        public width:number;
+        public height:number;
+        public xOffset:number;
+        public yOffset:number;
+        public xAdvanced:number;
         constructor() {
             
         }
         public static getGlyphFromField(field:string[]):FontGlyph {
             let fontFlyph = new FontGlyph()
-            fontFlyph._id = getNumber(field[1]);
-            fontFlyph._x = getNumber(field[2]);
-            fontFlyph._y = getNumber(field[3]);
-            fontFlyph._width = getNumber(field[4]);
-            fontFlyph._height = getNumber(field[5]);
-            fontFlyph._xOffset = getNumber(field[6]);
-            fontFlyph._yOffset = getNumber(field[7]);
-            fontFlyph._xAdvanced = getNumber(field[8]);
+            fontFlyph.id = getNumber(field[1]);
+            fontFlyph.x = getNumber(field[2]);
+            fontFlyph.y = getNumber(field[3]);
+            fontFlyph.width = getNumber(field[4]);
+            fontFlyph.height = getNumber(field[5]);
+            fontFlyph.xOffset = getNumber(field[6]);
+            fontFlyph.yOffset = getNumber(field[7]);
+            fontFlyph.xAdvanced = getNumber(field[8]);
             return fontFlyph;
         }
     }
 
     export class BitmapFont {
-        private _fontImage:ImageBitmap; // will be rethink about this.
+        private _fontImage:HTMLImageElement;
         private _fileName:string;
         private _glyphs:{[id:number]:FontGlyph} = {};
         constructor(content:string) {

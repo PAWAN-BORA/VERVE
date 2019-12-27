@@ -109,12 +109,17 @@ window.onload = ()=>{
     // renderer2.tempFun();
     start();
 }
+let textComponent:VERVE.TextComponent;
 let content:string;
+let gameObject4 = new VERVE.GameObject();
+
 let xhttp = new XMLHttpRequest();
 xhttp.onreadystatechange = function () {
     if(this.readyState==4 && this.status===200) {
         content = xhttp.responseText;
-        let font = new VERVE.BitmapFont(content);
+        textComponent = new VERVE.TextComponent("This", content);
+        gameObject4.addComponent(textComponent);
+        scene.addObject(gameObject4);
     } else {
         console.log(this.readyState);
         console.log(this.status);

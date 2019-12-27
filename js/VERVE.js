@@ -188,22 +188,16 @@ var VERVE;
     class FontGlyph {
         constructor() {
         }
-        get id() {
-            return this._id;
-        }
-        set id(value) {
-            this._id = value;
-        }
         static getGlyphFromField(field) {
             let fontFlyph = new FontGlyph();
-            fontFlyph._id = getNumber(field[1]);
-            fontFlyph._x = getNumber(field[2]);
-            fontFlyph._y = getNumber(field[3]);
-            fontFlyph._width = getNumber(field[4]);
-            fontFlyph._height = getNumber(field[5]);
-            fontFlyph._xOffset = getNumber(field[6]);
-            fontFlyph._yOffset = getNumber(field[7]);
-            fontFlyph._xAdvanced = getNumber(field[8]);
+            fontFlyph.id = getNumber(field[1]);
+            fontFlyph.x = getNumber(field[2]);
+            fontFlyph.y = getNumber(field[3]);
+            fontFlyph.width = getNumber(field[4]);
+            fontFlyph.height = getNumber(field[5]);
+            fontFlyph.xOffset = getNumber(field[6]);
+            fontFlyph.yOffset = getNumber(field[7]);
+            fontFlyph.xAdvanced = getNumber(field[8]);
             return fontFlyph;
         }
     }
@@ -245,6 +239,31 @@ var VERVE;
         }
     }
     VERVE.BitmapFont = BitmapFont;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class BitmapText {
+        constructor(geometry, indices, material) {
+            this._geometry = geometry;
+            this._material = material;
+            this._textureIndices = indices;
+        }
+        load(gl) {
+            this._buffer = new VERVE.TextureBuffer(gl);
+            this._buffer.loadData(this._geometry.data, this._geometry.indices, this._textureIndices);
+            this._material.texture = new VERVE.Texture(gl);
+            if (this._material instanceof VERVE.TextureMaterial) {
+                this._material.loadTexture();
+            }
+            this._material.texture.active();
+        }
+        draw(model) {
+            this._material.texture.active();
+            this._buffer.bind();
+            this._buffer.draw();
+        }
+    }
+    VERVE.BitmapText = BitmapText;
 })(VERVE || (VERVE = {}));
 var VERVE;
 (function (VERVE) {
@@ -807,6 +826,72 @@ var VERVE;
 })(VERVE || (VERVE = {}));
 var VERVE;
 (function (VERVE) {
+    class TextComponent {
+        constructor(text, data) {
+            this._bitmapText = [];
+            this.isLoading = true;
+            this._text = text;
+            this._transform = new VERVE.Transform();
+            this._material = new VERVE.BasicMaterial("#445566");
+            this._BitmapFont = new VERVE.BitmapFont(data);
+        }
+        get x() {
+            return this._transform.position.x;
+        }
+        set x(val) {
+            this._transform.position.x = val;
+        }
+        get y() {
+            return this._transform.position.y;
+        }
+        set y(val) {
+            this._transform.position.y = val;
+        }
+        get rotate() {
+            return this._transform.rotation.z;
+        }
+        set rotate(val) {
+            this._transform.rotation.z = val;
+        }
+        scale(x, y) {
+            this._transform.scale.x = x;
+            this._transform.scale.y = y;
+        }
+        getGlyphs() {
+        }
+        load(gl) {
+            for (let i = 0; i < this._text.length; i++) {
+                let glyph = this._BitmapFont.getGlyph(this._text.charAt(i));
+                console.log(glyph.width, glyph.height);
+                let geometry = new VERVE.PlaneGeometry(glyph.width, glyph.height);
+                let indices = [
+                    glyph.x / 256, glyph.y / 256,
+                    (glyph.x + glyph.width) / 256, glyph.y / 256,
+                    (glyph.x + glyph.width) / 256, (glyph.y + glyph.height) / 256,
+                    (glyph.x) / 256, (glyph.y + glyph.height) / 256,
+                ];
+                this._bitmapText[i] = new VERVE.BitmapText(geometry, indices, this._material);
+                this._bitmapText[i].load(gl);
+            }
+            console.log(this._bitmapText);
+        }
+        update(delta) {
+            this._localMatrix = this._transform.getTranformationMatrix();
+        }
+        render(render) {
+            let model = VERVE.Matrix4X4.multiply(this.parent.worldMatrix, this._localMatrix);
+            let modelLocation = render.shader.getUniformLocation("u_model");
+            render.gl.uniformMatrix4fv(modelLocation, false, new Float32Array(model.data));
+            this._material.loadUniform(render.gl, render.shader);
+            for (let b of this._bitmapText) {
+                b.draw(model);
+            }
+        }
+    }
+    VERVE.TextComponent = TextComponent;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
     class Buffer {
         constructor(gl) {
             this._data = [];
@@ -1154,12 +1239,16 @@ window.onload = () => {
     renderer.tempFun();
     start();
 };
+let textComponent;
 let content;
+let gameObject4 = new VERVE.GameObject();
 let xhttp = new XMLHttpRequest();
 xhttp.onreadystatechange = function () {
     if (this.readyState == 4 && this.status === 200) {
         content = xhttp.responseText;
-        let font = new VERVE.BitmapFont(content);
+        textComponent = new VERVE.TextComponent("This", content);
+        gameObject4.addComponent(textComponent);
+        scene.addObject(gameObject4);
     }
     else {
         console.log(this.readyState);
