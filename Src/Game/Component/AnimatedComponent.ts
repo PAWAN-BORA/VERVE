@@ -16,6 +16,10 @@ namespace VERVE {
         public isLoading: boolean = true;
         public startAnimation:boolean = false;
         private _totalTime:number = 0;
+       // temp might  be change later;
+        private _physicsObject:PhysicsObject;
+        private _buttonEvent:ButtonEvent;
+        //
         public get buffer(): TextureBuffer {
             return this._buffer;
         }
@@ -52,7 +56,13 @@ namespace VERVE {
             this._row = row;
             this._column = column;
             this.getWidthAndHeight();
+          
         }
+        public setMouse(shape:IShape):void {
+            this._buttonEvent = new ButtonEvent(shape);
+            MouseManager.addEvent(this._buttonEvent);
+        }
+
         private getWidthAndHeight():void {
             this._frameWidth = 1/this._column;
             this._frameHeight = 1/this._row;
@@ -98,8 +108,16 @@ namespace VERVE {
             }
         }
         private _num =0;
-      
+        // temp 
         public update(delta:number): void {
+            // this._physicsObject.update(delta);
+            // let pos = this._physicsObject.getPos();
+            // if(pos.x<50) {
+            //     console.log(pos)
+            //     console.log(this._transform.position)
+            // }
+            // this._transform.position.x = pos.x;
+            // this._transform.position.y = pos.y;
             this._localMatrix = this._transform.getTranformationMatrix();
             if(this.startAnimation) {
                 this._totalTime += delta;
@@ -115,6 +133,8 @@ namespace VERVE {
                 }
                 
             }
+            // if()
+            // this._transform.position.x++
         }
         public render(render: Renderer): void {
             let model = Matrix4X4.multiply(this.parent.worldMatrix, this._localMatrix)

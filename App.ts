@@ -10,8 +10,9 @@ let imageForTexture = new Image();
 imageForTexture.src = `Assets/Textures/star2.png`;
 let spriteImage = new Image();
 spriteImage.src = `Assets/Textures/spriteSheet.png`;
-let renderer = new VERVE.Renderer("canvas");
-let camera = new VERVE.Camera(0, renderer.canvas.width, renderer.canvas.height, 0);
+let renderer = new VERVE.Renderer(800, 600, "canvas");
+renderer.setInputEvents()
+let camera = new VERVE.Camera(0, renderer.width, renderer.height, 0);
 
 let renderer2 = new VERVE.Renderer();
 document.body.appendChild(renderer2.canvas)
@@ -63,7 +64,7 @@ material.color = "rbga(255, 255, 0, 40)";
 let animateMaterial = new VERVE.TextureMaterial(spriteImage);
 let animateSprite = new VERVE.AnimatedComponent(108, 140, 2, 8, animateMaterial);
 animateSprite.startAnimation = true;
-let frameSequence = [
+let frameSequence1 = [
     {x:1, y:1},
     {x:2, y:1},
     {x:3, y:1},
@@ -72,6 +73,9 @@ let frameSequence = [
     {x:6, y:1},
     {x:7, y:1},
     {x:8, y:1},
+   
+]
+let frameSequence2 = [
     {x:1, y:2},
     {x:2, y:2},
     {x:3, y:2},
@@ -81,12 +85,24 @@ let frameSequence = [
     {x:7, y:2},
     {x:8, y:2},
 ]
-animateSprite.setFrameSequence(frameSequence);
+animateSprite.setFrameSequence(frameSequence1);
+animateSprite.frameTime = 100;
 let gameObject3 = new VERVE.GameObject();
 gameObject3.x = 320;
 gameObject3.y = 190;
+
+let physicsObject = new VERVE.PhysicsObject(new VERVE.Vector2(gameObject3.x, gameObject3.y), new VERVE.Vector2(0, 0))
+let physicsObject2 = new VERVE.PhysicsObject(new VERVE.Vector2(gameObject.x, 280), new VERVE.Vector2(0, 0))
+// console.log(physicsObject)
 gameObject3.addComponent(animateSprite);
 scene.addObject(gameObject3);
+animateSprite.setMouse(physicsObject.shape);
+// temp 
+let physicesEngine = new VERVE.PhysicsEngine();
+physicesEngine.addObjects(physicsObject)
+physicesEngine.addObjects(physicsObject2)
+scene.addObject(physicesEngine);
+//
 function start() {
     
     requestAnimationFrame(start);
@@ -95,12 +111,29 @@ function start() {
     // renderer2.render(scene);
     renderer.render(scene);
     // spriteComponent2.x += 1;
+    
     gameObject.rotate += 0.01;
     gameObject4.rotate += 0.01;
     ellispeComponent.rotate -= 0.01;
     // gameObject2.rotate += 0.02;
     spriteComponent3.rotate += 0.01;
     spriteComponent2.rotate += Math.PI/180*1;
+    physicsObject.update();
+    physicsObject2.update();
+    let pos = physicsObject.getPos();
+    gameObject3.x = pos.x;
+    gameObject3.y = pos.y;
+    if(pos.x>renderer.width || pos.x<0) {
+        physicsObject._velocity.x = -physicsObject._velocity.x;
+        if(physicsObject._velocity.x<0) {
+            animateSprite.setFrameSequence(frameSequence2); 
+            
+        } else {
+            animateSprite.setFrameSequence(frameSequence1); 
+
+        }
+    }
+    // physicsObject.render(renderer);
     // console.log(spriteComponent2.rotate)
 }
 

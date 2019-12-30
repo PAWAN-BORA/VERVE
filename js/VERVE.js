@@ -166,6 +166,7 @@ var VERVE;
     class PlaneGeometry extends VERVE.Geometry {
         constructor(width, height) {
             super();
+            this.origin = new VERVE.Vector2();
             this._data = [
                 -width / 2, -height / 2,
                 width / 2, -height / 2,
@@ -176,6 +177,8 @@ var VERVE;
                 0, 1, 2,
                 2, 3, 0,
             ];
+        }
+        setOrigin() {
         }
     }
     VERVE.PlaneGeometry = PlaneGeometry;
@@ -302,6 +305,56 @@ var VERVE;
         }
     }
     VERVE.Texture = Texture;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class MouseManager {
+        static addEvent(MouseEvent) {
+            this._mouseEvents.push(MouseEvent);
+        }
+        static removeEvent(MouseEvent) {
+            let index = this._mouseEvents.indexOf(MouseEvent);
+            if (index !== -1) {
+                this._mouseEvents.splice(index, 1);
+            }
+        }
+        static initialise(renderer) {
+            MouseManager._cvs = renderer.canvas;
+            MouseManager._width = renderer.width;
+            MouseManager._height = renderer.height;
+            MouseManager._cvs.addEventListener("mousedown", MouseManager.mousedown);
+            MouseManager._cvs.addEventListener("mousemove", MouseManager.mousemove);
+            MouseManager._cvs.addEventListener("mouseup", MouseManager.mouseup);
+        }
+        static getPoints(event) {
+            let rect = MouseManager._cvs.getBoundingClientRect();
+            let ratioX = MouseManager._width / MouseManager._cvs.width;
+            let ratioY = MouseManager._height / MouseManager._cvs.height;
+            let x = (event.x - rect.left) * ratioX;
+            let y = (event.y - rect.top) * ratioY;
+            return new VERVE.Vector2(x, y);
+        }
+        static mousedown(event) {
+            let point = MouseManager.getPoints(event);
+            for (let i of MouseManager._mouseEvents) {
+                i.onMousedown(point);
+            }
+        }
+        static mousemove(event) {
+            let point = MouseManager.getPoints(event);
+            for (let i of MouseManager._mouseEvents) {
+                i.onMousemove(point);
+            }
+        }
+        static mouseup(event) {
+            let point = MouseManager.getPoints(event);
+            for (let i of MouseManager._mouseEvents) {
+                i.onMouseup(point);
+            }
+        }
+    }
+    MouseManager._mouseEvents = [];
+    VERVE.MouseManager = MouseManager;
 })(VERVE || (VERVE = {}));
 var VERVE;
 (function (VERVE) {
@@ -461,6 +514,24 @@ var VERVE;
         toArray() {
             return [this.x, this.y];
         }
+        add(vector) {
+            this.x += vector.x;
+            this.y += vector.y;
+        }
+        subtract(vector) {
+            this.x -= vector.x;
+            this.y -= vector.y;
+        }
+        set(x, y) {
+            this.x = x;
+            this.y = y;
+        }
+        scalarMultiply(scalar) {
+            return new Vector2(this.x * scalar, this.y * scalar);
+        }
+        magnitude() {
+            return Math.sqrt(Math.pow((this.x), 2) + Math.pow((this.y), 2));
+        }
     }
     VERVE.Vector2 = Vector2;
 })(VERVE || (VERVE = {}));
@@ -562,21 +633,27 @@ var VERVE;
 (function (VERVE) {
     class Scene {
         constructor() {
-            this._gameObject = [];
+            this._gameObjects = [];
             this.isLoading = true;
+        }
+        get gameObjects() {
+            return this._gameObjects;
+        }
+        set gameObjects(value) {
+            this._gameObjects = value;
         }
         BeforeRender(renderer) {
         }
         addObject(gameObject) {
-            this._gameObject.push(gameObject);
+            this._gameObjects.push(gameObject);
         }
         update(delta) {
-            for (let g of this._gameObject) {
+            for (let g of this._gameObjects) {
                 g.update(delta);
             }
         }
         render(renderer) {
-            for (let g of this._gameObject) {
+            for (let g of this._gameObjects) {
                 g.render(renderer);
             }
         }
@@ -627,6 +704,10 @@ var VERVE;
         scale(x, y) {
             this._transform.scale.x = x;
             this._transform.scale.y = y;
+        }
+        setMouse(shape) {
+            this._buttonEvent = new VERVE.ButtonEvent(shape);
+            VERVE.MouseManager.addEvent(this._buttonEvent);
         }
         getWidthAndHeight() {
             this._frameWidth = 1 / this._column;
@@ -734,7 +815,13 @@ var VERVE;
             this._localMatrix = this._transform.getTranformationMatrix();
         }
         render(render) {
-            let model = VERVE.Matrix4X4.multiply(this.parent.worldMatrix, this._localMatrix);
+            let model;
+            if (this.parent == undefined) {
+                model = this._localMatrix;
+            }
+            else {
+                model = VERVE.Matrix4X4.multiply(this.parent.worldMatrix, this._localMatrix);
+            }
             let modelLocation = render.shader.getUniformLocation("u_model");
             render.gl.uniformMatrix4fv(modelLocation, false, new Float32Array(model.data));
             this._material.loadUniform(render.gl, render.shader);
@@ -946,6 +1033,200 @@ var VERVE;
 })(VERVE || (VERVE = {}));
 var VERVE;
 (function (VERVE) {
+    class ButtonEvent {
+        constructor(shape) {
+            this.isClicked = false;
+            this.hover = false;
+            this.shape = shape;
+        }
+        onMousedown(point) {
+            if (this.shape.pointInShape(point.x, point.y)) {
+                console.log("onMouseDown");
+                this.isClicked = true;
+            }
+        }
+        onMousemove(point) {
+            if (this.shape.pointInShape(point.x, point.y)) {
+                console.log("onMouseMove");
+            }
+            if (this.isClicked) {
+                this.shape.position.x = point.x;
+                this.shape.position.y = point.y;
+            }
+        }
+        onMouseup(point) {
+            if (this.shape.pointInShape(point.x, point.y)) {
+                console.log("onMouseUp");
+            }
+            this.isClicked = false;
+        }
+        load() {
+            VERVE.MouseManager.addEvent(this);
+        }
+    }
+    VERVE.ButtonEvent = ButtonEvent;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class PhysicsEngine {
+        constructor() {
+            this._objects = [];
+            this.isLoading = true;
+        }
+        addObjects(object) {
+            this._objects.push(object);
+        }
+        removeObject(object) {
+            let index = this._objects.indexOf(object);
+            if (index !== -1) {
+                this._objects.splice(index, 1);
+            }
+            else {
+                throw new Error(`physics objects dose not exist`);
+            }
+        }
+        checkCollision() {
+            for (let i = 0; i < this._objects.length; i++) {
+                for (let j = i + 1; j < this._objects.length; j++) {
+                    if (this._objects[i].shape.intersect(this._objects[j].shape)) {
+                        console.log("colliding");
+                    }
+                }
+            }
+        }
+        update() {
+            for (let o of this._objects) {
+                o.update();
+            }
+            this.checkCollision();
+        }
+        load(gl) {
+            for (let o of this._objects) {
+                o.load(gl);
+            }
+        }
+        render(renderer) {
+            for (let o of this._objects) {
+                o.render(renderer);
+            }
+        }
+    }
+    VERVE.PhysicsEngine = PhysicsEngine;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class PhysicsObject {
+        constructor(pos, vel = new VERVE.Vector2()) {
+            this._type = "dynamic";
+            this.isLoading = true;
+            this._position = pos;
+            this._velocity = vel;
+            this.shape = new VERVE.Circle(this.position, 50);
+            console.log(this._position, "thsids isd isd fsif");
+            let geometry = new VERVE.CircleGeometry(50, 90);
+            let material = new VERVE.BasicMaterial("#ffff00");
+            this._shapeComponent = new VERVE.ShapeComponent(geometry, material);
+        }
+        get velocity() {
+            return this._velocity;
+        }
+        set velocity(value) {
+            this._velocity = value;
+        }
+        get position() {
+            return this._position;
+        }
+        set position(value) {
+            this._position = value;
+        }
+        getPos() {
+            return this._position;
+        }
+        update() {
+            this._position.add(this._velocity);
+            this._shapeComponent.x = this.position.x;
+            this._shapeComponent.y = this.position.y;
+            this._shapeComponent.update(23);
+        }
+        load(gl) {
+            this._shapeComponent.load(gl);
+        }
+        render(renderer) {
+            this._shapeComponent.render(renderer);
+        }
+    }
+    VERVE.PhysicsObject = PhysicsObject;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class Circle {
+        constructor(position, radius) {
+            this.position = position;
+            this.radius = radius;
+        }
+        pointInShape(x, y) {
+            let dis = Math.sqrt(Math.pow((this.position.x - x), 2) + Math.pow((this.position.y - y), 2));
+            let vec = new VERVE.Vector2(x, y);
+            vec.subtract(this.position);
+            dis = vec.magnitude();
+            if (dis < this.radius) {
+                return true;
+            }
+            return false;
+        }
+        intersect(shape) {
+            if (shape instanceof Circle) {
+                return this.intersectWithCircle(shape);
+            }
+        }
+        intersectWithCircle(shape) {
+            let vec = new VERVE.Vector2(shape.position.x, shape.position.y);
+            vec.subtract(this.position);
+            let dis = vec.magnitude();
+            if (dis < this.radius + shape.radius) {
+                return true;
+            }
+            return false;
+        }
+    }
+    VERVE.Circle = Circle;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class Rectangle {
+        constructor(position, width, height) {
+            this.position = position;
+            this.width = width;
+            this.height = height;
+        }
+        pointInShape(x, y) {
+            let centerX = this.position.x + this.width / 2;
+            let centerY = this.position.y + this.height / 2;
+            if (Math.abs(this.position.x - x) < this.width / 2 && Math.abs(this.position.y - y) < this.height / 2) {
+                return true;
+            }
+            return false;
+        }
+        intersect(shape) {
+            if (shape instanceof Rectangle) {
+                return this.intesetWithRectangle(shape);
+            }
+        }
+        intesetWithRectangle(rect) {
+            let xl = Math.max(this.position.x - this.width / 2, rect.position.x - rect.width / 2);
+            let xr = Math.min(this.position.x + this.width / 2, rect.position.x + rect.width / 2);
+            let yt = Math.max(this.position.y - this.height / 2, rect.position.y - rect.height / 2);
+            let yb = Math.min(this.position.y + this.height / 2, rect.position.y + rect.height / 2);
+            if (xl < xr && yt < yb) {
+                return true;
+            }
+            return false;
+        }
+    }
+    VERVE.Rectangle = Rectangle;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
     class Buffer {
         constructor(gl) {
             this._data = [];
@@ -1018,10 +1299,12 @@ var VERVE;
 var VERVE;
 (function (VERVE) {
     class Renderer {
-        constructor(CanvasId) {
+        constructor(width = 2, height = 2, CanvasId) {
             this._startTime = 0;
             this._frames = 0;
             this._totalTime = 0;
+            this.width = width;
+            this.height = height;
             let canvasData = new VERVE.Canvas(CanvasId);
             this.canvas = canvasData.getCanvas();
             this.gl = canvasData.getContext();
@@ -1057,6 +1340,9 @@ var VERVE;
                 this._frames = 0;
             }
         }
+        setInputEvents() {
+            VERVE.MouseManager.initialise(this);
+        }
         update() {
             let endTime = performance.now();
             let delta = endTime - this._startTime;
@@ -1066,7 +1352,7 @@ var VERVE;
         render(scene) {
             this.gl.clearColor(0, 1, 1, 1);
             this.gl.clear(this.gl.COLOR_BUFFER_BIT || this.gl.DEPTH_BUFFER_BIT);
-            for (let object of scene._gameObject) {
+            for (let object of scene.gameObjects) {
                 this.loadObject(object);
             }
             scene.render(this);
@@ -1212,8 +1498,9 @@ let imageForTexture = new Image();
 imageForTexture.src = `Assets/Textures/star2.png`;
 let spriteImage = new Image();
 spriteImage.src = `Assets/Textures/spriteSheet.png`;
-let renderer = new VERVE.Renderer("canvas");
-let camera = new VERVE.Camera(0, renderer.canvas.width, renderer.canvas.height, 0);
+let renderer = new VERVE.Renderer(800, 600, "canvas");
+renderer.setInputEvents();
+let camera = new VERVE.Camera(0, renderer.width, renderer.height, 0);
 let renderer2 = new VERVE.Renderer();
 document.body.appendChild(renderer2.canvas);
 renderer2.setCamera(camera);
@@ -1254,7 +1541,7 @@ material.color = "rbga(255, 255, 0, 40)";
 let animateMaterial = new VERVE.TextureMaterial(spriteImage);
 let animateSprite = new VERVE.AnimatedComponent(108, 140, 2, 8, animateMaterial);
 animateSprite.startAnimation = true;
-let frameSequence = [
+let frameSequence1 = [
     { x: 1, y: 1 },
     { x: 2, y: 1 },
     { x: 3, y: 1 },
@@ -1263,6 +1550,8 @@ let frameSequence = [
     { x: 6, y: 1 },
     { x: 7, y: 1 },
     { x: 8, y: 1 },
+];
+let frameSequence2 = [
     { x: 1, y: 2 },
     { x: 2, y: 2 },
     { x: 3, y: 2 },
@@ -1272,12 +1561,20 @@ let frameSequence = [
     { x: 7, y: 2 },
     { x: 8, y: 2 },
 ];
-animateSprite.setFrameSequence(frameSequence);
+animateSprite.setFrameSequence(frameSequence1);
+animateSprite.frameTime = 100;
 let gameObject3 = new VERVE.GameObject();
 gameObject3.x = 320;
 gameObject3.y = 190;
+let physicsObject = new VERVE.PhysicsObject(new VERVE.Vector2(gameObject3.x, gameObject3.y), new VERVE.Vector2(0, 0));
+let physicsObject2 = new VERVE.PhysicsObject(new VERVE.Vector2(gameObject.x, 280), new VERVE.Vector2(0, 0));
 gameObject3.addComponent(animateSprite);
 scene.addObject(gameObject3);
+animateSprite.setMouse(physicsObject.shape);
+let physicesEngine = new VERVE.PhysicsEngine();
+physicesEngine.addObjects(physicsObject);
+physicesEngine.addObjects(physicsObject2);
+scene.addObject(physicesEngine);
 function start() {
     requestAnimationFrame(start);
     if (updating)
@@ -1288,6 +1585,20 @@ function start() {
     ellispeComponent.rotate -= 0.01;
     spriteComponent3.rotate += 0.01;
     spriteComponent2.rotate += Math.PI / 180 * 1;
+    physicsObject.update();
+    physicsObject2.update();
+    let pos = physicsObject.getPos();
+    gameObject3.x = pos.x;
+    gameObject3.y = pos.y;
+    if (pos.x > renderer.width || pos.x < 0) {
+        physicsObject._velocity.x = -physicsObject._velocity.x;
+        if (physicsObject._velocity.x < 0) {
+            animateSprite.setFrameSequence(frameSequence2);
+        }
+        else {
+            animateSprite.setFrameSequence(frameSequence1);
+        }
+    }
 }
 VERVE.Color.getColor("rbga(255, 45, 78, 20)");
 window.onload = () => {

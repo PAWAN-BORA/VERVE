@@ -45,7 +45,14 @@ namespace VERVE {
             this._localMatrix = this._transform.getTranformationMatrix();
         }
         render(render: Renderer): void {
-            let model = Matrix4X4.multiply(this.parent.worldMatrix, this._localMatrix)
+            let model:Matrix4X4;
+            if(this.parent==undefined) {
+                model = this._localMatrix;
+
+            } else {
+
+                model = Matrix4X4.multiply(this.parent.worldMatrix, this._localMatrix)
+            }
             let modelLocation = render.shader.getUniformLocation("u_model");
             render.gl.uniformMatrix4fv(modelLocation, false, new Float32Array(model.data));
             this._material.loadUniform(render.gl, render.shader);

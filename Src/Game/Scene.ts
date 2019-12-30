@@ -1,8 +1,12 @@
 namespace VERVE {
     export class Scene {
-        private _gameObject:GameObject[] = [];
-        private _renderer:Renderer;
-        private _sprite:Sprite; // temp;
+        private _gameObjects: GameObject[] = [];
+        public get gameObjects(): GameObject[] {
+            return this._gameObjects;
+        }
+        public set gameObjects(value: GameObject[]) {
+            this._gameObjects = value;
+        }
         public isLoading:boolean = true;
         constructor() {
             
@@ -16,16 +20,16 @@ namespace VERVE {
 
         }
         public addObject(gameObject:GameObject):void {
-            this._gameObject.push(gameObject);
+            this._gameObjects.push(gameObject);
         }
         public update(delta:number):void {
-            for(let g of this._gameObject) {
+            for(let g of this._gameObjects) {
                 g.update(delta);
             }
         }
         public render(renderer:Renderer):void {
             // this._sprite.draw();
-            for(let g of this._gameObject) {
+            for(let g of this._gameObjects) {
                 g.render(renderer);
                 // console.log(45)
             }

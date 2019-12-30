@@ -8,10 +8,14 @@ namespace VERVE {
         private _sprite:Sprite; 
         private _camera:Camera;
         // end
+        public width:number;
+        public height:number;
         private _startTime:number = 0;
         private _frames:number = 0;
         private _totalTime:number = 0;
-        constructor(CanvasId?:string) {
+        constructor(width:number=2, height:number=2, CanvasId?:string) {
+            this.width = width;
+            this.height = height;
             let canvasData = new Canvas(CanvasId);
             this.canvas = canvasData.getCanvas();
             this.gl = canvasData.getContext();
@@ -52,6 +56,9 @@ namespace VERVE {
                 this._frames = 0;
             }
         }
+        public setInputEvents():void {
+            MouseManager.initialise(this);
+        }
         public update():void {
             let endTime = performance.now();
             let delta = endTime - this._startTime;
@@ -64,7 +71,7 @@ namespace VERVE {
             // this.gl.colorMask(false, false, false, true);
             this.gl.clearColor(0, 1, 1, 1);
             this.gl.clear(this.gl.COLOR_BUFFER_BIT || this.gl.DEPTH_BUFFER_BIT); 
-            for(let object of scene._gameObject) {
+            for(let object of scene.gameObjects) {
                 this.loadObject(object);
             }
             scene.render(this);
