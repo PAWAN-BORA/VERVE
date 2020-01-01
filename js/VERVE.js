@@ -28,46 +28,46 @@ var VERVE;
                 b = parseInt(value.substring(4, 6), 16);
                 return new Color(r, g, b);
             }
-            else if (color.substring(0, 4) === "rbga") {
-                let value = color.split("rbga")[1].slice(1, -1);
+            else if (color.substring(0, 4) === "rgba") {
+                let value = color.split("rgba")[1].slice(1, -1);
                 let colors = value.split(",");
                 r = parseInt(colors[0]);
                 if (isNaN(r)) {
-                    throw new Error(`wrong rbga format: red value is not defined`);
+                    throw new Error(`wrong rgba format: red value is not defined`);
                 }
                 g = parseInt(colors[1]);
                 if (isNaN(g)) {
-                    throw new Error(`wrong rbga format: green value is not defined`);
+                    throw new Error(`wrong rgba format: green value is not defined`);
                 }
                 b = parseInt(colors[2]);
                 if (isNaN(b)) {
-                    throw new Error(`wrong rbga format: blue value is not defined`);
+                    throw new Error(`wrong rgba format: blue value is not defined`);
                 }
                 a = parseInt(colors[3]);
                 if (isNaN(a)) {
-                    throw new Error(`wrong rbga format: alpah value is not defined`);
+                    throw new Error(`wrong rgba format: alpah value is not defined`);
                 }
                 return new Color(r, g, b, a);
             }
-            else if (color.substring(0, 3) === "rbg") {
-                let value = color.split("rbga")[1].slice(1, -1);
+            else if (color.substring(0, 3) === "rgb") {
+                let value = color.split("rgb")[1].slice(1, -1);
                 let colors = value.split(",");
                 r = parseInt(colors[0]);
                 if (isNaN(r)) {
-                    throw new Error(`wrong rbga format: red value is not defined`);
+                    throw new Error(`wrong rgba format: red value is not defined`);
                 }
                 g = parseInt(colors[1]);
                 if (isNaN(g)) {
-                    throw new Error(`wrong rbga format: green value is not defined`);
+                    throw new Error(`wrong rgba format: green value is not defined`);
                 }
                 b = parseInt(colors[2]);
                 if (isNaN(b)) {
-                    throw new Error(`wrong rbga format: blue value is not defined`);
+                    throw new Error(`wrong rgba format: blue value is not defined`);
                 }
                 return new Color(r, g, b);
             }
-            console.error(`color format "${color}" is incorrect. setting white for the color`);
-            return new Color(255, 255, 255);
+            console.error(`color format "${color}" is incorrect.`);
+            return undefined;
         }
     }
     VERVE.Color = Color;
@@ -206,9 +206,17 @@ var VERVE;
     }
     VERVE.FontGlyph = FontGlyph;
     class BitmapFont {
-        constructor(content) {
+        constructor(content, path, fun) {
             this._glyphs = {};
+            this._path = path;
+            this.loadFun = fun;
             this.prossesFontFile(content);
+        }
+        get name() {
+            return this._name;
+        }
+        set name(value) {
+            this._name = value;
         }
         get width() {
             return this._width;
@@ -235,6 +243,17 @@ var VERVE;
                         this._width = getNumber(fields[3]);
                         this._height = getNumber(fields[4]);
                         break;
+                    case "page":
+                        let str = this._path.split('/');
+                        str.pop();
+                        let path = str.join('/').concat('/', fields[2].split("=")[1].replace(/"/g, ""));
+                        this.fontImage = new Image();
+                        this.fontImage.src = path;
+                        this.fontImage.onload = () => {
+                            if (this.loadFun !== undefined) {
+                                this.loadFun();
+                            }
+                        };
                     case "chars":
                         charCount = getNumber(fields[1]);
                         break;
@@ -246,7 +265,15 @@ var VERVE;
                         break;
                 }
             }
-            console.log(this._glyphs);
+            let num = 0;
+            for (let glyph in this._glyphs) {
+                if (this._glyphs.hasOwnProperty(glyph)) {
+                    num++;
+                }
+            }
+            if (charCount !== num) {
+                throw new Error(`font file reported existence of ${charCount} glyph, but only ${num} were found.`);
+            }
         }
     }
     VERVE.BitmapFont = BitmapFont;
@@ -308,14 +335,45 @@ var VERVE;
 })(VERVE || (VERVE = {}));
 var VERVE;
 (function (VERVE) {
+    class Vector2 {
+        constructor(x = 0, y = 0) {
+            this.x = x;
+            this.y = y;
+        }
+        toArray() {
+            return [this.x, this.y];
+        }
+        add(vector) {
+            this.x += vector.x;
+            this.y += vector.y;
+        }
+        subtract(vector) {
+            this.x -= vector.x;
+            this.y -= vector.y;
+        }
+        set(x, y) {
+            this.x = x;
+            this.y = y;
+        }
+        scalarMultiply(scalar) {
+            return new Vector2(this.x * scalar, this.y * scalar);
+        }
+        magnitude() {
+            return Math.sqrt(Math.pow((this.x), 2) + Math.pow((this.y), 2));
+        }
+    }
+    VERVE.Vector2 = Vector2;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
     class MouseManager {
         static addEvent(MouseEvent) {
-            this._mouseEvents.push(MouseEvent);
+            this._buttonEvent.push(MouseEvent);
         }
         static removeEvent(MouseEvent) {
-            let index = this._mouseEvents.indexOf(MouseEvent);
+            let index = this._buttonEvent.indexOf(MouseEvent);
             if (index !== -1) {
-                this._mouseEvents.splice(index, 1);
+                this._buttonEvent.splice(index, 1);
             }
         }
         static initialise(renderer) {
@@ -332,33 +390,72 @@ var VERVE;
             let ratioY = MouseManager._height / MouseManager._cvs.height;
             let x = (event.x - rect.left) * ratioX;
             let y = (event.y - rect.top) * ratioY;
-            return new VERVE.Vector2(x, y);
+            this._mousePos.set(x, y);
         }
         static mousedown(event) {
-            let point = MouseManager.getPoints(event);
-            for (let i of MouseManager._mouseEvents) {
-                i.onMousedown(point);
+            MouseManager.getPoints(event);
+            for (let i of MouseManager._buttonEvent) {
+                i.onMousedown(MouseManager._mousePos);
             }
         }
         static mousemove(event) {
-            let point = MouseManager.getPoints(event);
-            for (let i of MouseManager._mouseEvents) {
-                i.onMousemove(point);
+            MouseManager.getPoints(event);
+            for (let i of MouseManager._buttonEvent) {
+                i.onMousemove(MouseManager._mousePos);
             }
         }
         static mouseup(event) {
-            let point = MouseManager.getPoints(event);
-            for (let i of MouseManager._mouseEvents) {
-                i.onMouseup(point);
+            MouseManager.getPoints(event);
+            for (let i of MouseManager._buttonEvent) {
+                i.onMouseup(MouseManager._mousePos);
             }
         }
     }
-    MouseManager._mouseEvents = [];
+    MouseManager._buttonEvent = [];
+    MouseManager._mousePos = new VERVE.Vector2();
     VERVE.MouseManager = MouseManager;
 })(VERVE || (VERVE = {}));
 var VERVE;
 (function (VERVE) {
+    class FontLoader {
+        constructor() {
+        }
+        static load(path, name, fun) {
+            let request = new XMLHttpRequest();
+            request.onreadystatechange = () => {
+                if (request.readyState == 4 && request.status === 200) {
+                    content = request.responseText;
+                    let bitmapFont = new VERVE.BitmapFont(content, path, fun);
+                    bitmapFont.name = name;
+                    FontLoader.bitmapFont[name] = bitmapFont;
+                }
+            };
+            request.open("GET", path);
+            request.send();
+        }
+    }
+    FontLoader.bitmapFont = {};
+    VERVE.FontLoader = FontLoader;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class TextureLoader {
+        constructor(path, fun) {
+        }
+    }
+    VERVE.TextureLoader = TextureLoader;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
     class Material {
+        constructor() {
+            this._color = new VERVE.Color(255, 255, 255);
+        }
+        set color(value) {
+            if (VERVE.Color.getColor(value) != undefined) {
+                this._color = VERVE.Color.getColor(value);
+            }
+        }
         get texture() {
             return this._texture;
         }
@@ -374,9 +471,6 @@ var VERVE;
         constructor(color) {
             super();
             this._color = VERVE.Color.getColor(color);
-        }
-        set color(value) {
-            this._color = VERVE.Color.getColor(value);
         }
         loadUniform(gl, shader) {
             let colorLocation = shader.getUniformLocation("u_color");
@@ -395,9 +489,13 @@ var VERVE;
         loadTexture() {
             this._texture.load(this._image);
         }
+        changeTexture(image) {
+            this._image = image;
+            this.loadTexture();
+        }
         loadUniform(gl, shader) {
             let colorLocation = shader.getUniformLocation("u_color");
-            gl.uniform4f(colorLocation, 1, 1, 1, 1);
+            gl.uniform4fv(colorLocation, new Float32Array(this._color.toFloatArray()));
         }
     }
     VERVE.TextureMaterial = TextureMaterial;
@@ -506,37 +604,6 @@ var VERVE;
 })(VERVE || (VERVE = {}));
 var VERVE;
 (function (VERVE) {
-    class Vector2 {
-        constructor(x = 0, y = 0) {
-            this.x = x;
-            this.y = y;
-        }
-        toArray() {
-            return [this.x, this.y];
-        }
-        add(vector) {
-            this.x += vector.x;
-            this.y += vector.y;
-        }
-        subtract(vector) {
-            this.x -= vector.x;
-            this.y -= vector.y;
-        }
-        set(x, y) {
-            this.x = x;
-            this.y = y;
-        }
-        scalarMultiply(scalar) {
-            return new Vector2(this.x * scalar, this.y * scalar);
-        }
-        magnitude() {
-            return Math.sqrt(Math.pow((this.x), 2) + Math.pow((this.y), 2));
-        }
-    }
-    VERVE.Vector2 = Vector2;
-})(VERVE || (VERVE = {}));
-var VERVE;
-(function (VERVE) {
     class Vector3 {
         constructor(x = 0, y = 0, z = 0) {
             this.x = x;
@@ -606,8 +673,12 @@ var VERVE;
             this.isLoading = false;
         }
         addComponent(component) {
+            if (component == undefined) {
+                throw new Error(`component is not define`);
+            }
             this._component.push(component);
             component.parent = this;
+            this.isLoading = true;
         }
         removeComponent(component) {
             let index = this._component.indexOf(component);
@@ -645,6 +716,9 @@ var VERVE;
         BeforeRender(renderer) {
         }
         addObject(gameObject) {
+            if (gameObject == undefined) {
+                throw new Error(`game object is not define`);
+            }
             this._gameObjects.push(gameObject);
         }
         update(delta) {
@@ -749,6 +823,9 @@ var VERVE;
             }
         }
         update(delta) {
+            if (this._buttonEvent.isClicked) {
+                this._buttonEvent.shape.position.set(this._buttonEvent.getMousePos.x, this._buttonEvent.getMousePos.y);
+            }
             this._localMatrix = this._transform.getTranformationMatrix();
             if (this.startAnimation) {
                 this._totalTime += delta;
@@ -897,12 +974,13 @@ var VERVE;
 var VERVE;
 (function (VERVE) {
     class TextComponent {
-        constructor(text, data, image) {
+        constructor(text, fontName) {
             this.isLoading = true;
             this._text = text;
             this._transform = new VERVE.Transform();
-            this._material = new VERVE.TextureMaterial(image);
-            this._BitmapFont = new VERVE.BitmapFont(data);
+            this._BitmapFont = VERVE.FontLoader.bitmapFont[fontName];
+            this._material = new VERVE.TextureMaterial(this._BitmapFont.fontImage);
+            this._material.color = "#000000";
         }
         get x() {
             return this._transform.position.x;
@@ -928,6 +1006,14 @@ var VERVE;
         }
         center() {
             this._transform.position.x = -this._width / 2;
+        }
+        changeFont(fontName) {
+            this._BitmapFont = VERVE.FontLoader.bitmapFont[fontName];
+            this._material.changeTexture(this._BitmapFont.fontImage);
+            this.changeText(this._text);
+        }
+        set color(color) {
+            this._material.color = color;
         }
         changeText(text) {
             this._text = text;
@@ -1037,28 +1123,28 @@ var VERVE;
         constructor(shape) {
             this.isClicked = false;
             this.hover = false;
+            this.getMousePos = new VERVE.Vector2();
             this.shape = shape;
         }
         onMousedown(point) {
             if (this.shape.pointInShape(point.x, point.y)) {
-                console.log("onMouseDown");
+                this.getMousePos.set(point.x, point.y);
                 this.isClicked = true;
             }
         }
         onMousemove(point) {
             if (this.shape.pointInShape(point.x, point.y)) {
-                console.log("onMouseMove");
             }
             if (this.isClicked) {
-                this.shape.position.x = point.x;
-                this.shape.position.y = point.y;
+                this.getMousePos.set(point.x, point.y);
             }
         }
         onMouseup(point) {
             if (this.shape.pointInShape(point.x, point.y)) {
-                console.log("onMouseUp");
             }
             this.isClicked = false;
+        }
+        update() {
         }
         load() {
             VERVE.MouseManager.addEvent(this);
@@ -1089,10 +1175,21 @@ var VERVE;
             for (let i = 0; i < this._objects.length; i++) {
                 for (let j = i + 1; j < this._objects.length; j++) {
                     if (this._objects[i].shape.intersect(this._objects[j].shape)) {
-                        console.log("colliding");
+                        this.checkPostionAfterCollistion(this._objects[i], this._objects[j]);
                     }
                 }
             }
+        }
+        checkPostionAfterCollistion(obj1, obj2) {
+            let res = 0.5;
+            let finVel1 = new VERVE.Vector2(), finVel2 = new VERVE.Vector2();
+            let delV = obj1.velocity.x - obj2.velocity.x;
+            let leftSide = obj1.mass * obj1.velocity.x + obj2.mass * obj2.velocity.x;
+            finVel1.x = (leftSide - obj2.mass * (res) * delV) / (obj1.mass + obj2.mass);
+            finVel2.x = res * delV + finVel1.x;
+            obj1.velocity.x = finVel1.x;
+            obj2.velocity.x = finVel2.x;
+            console.log(obj1.velocity.x, obj2.velocity.x);
         }
         update() {
             for (let o of this._objects) {
@@ -1118,6 +1215,8 @@ var VERVE;
     class PhysicsObject {
         constructor(pos, vel = new VERVE.Vector2()) {
             this._type = "dynamic";
+            this._mass = 1;
+            this._restitution = 0.8;
             this.isLoading = true;
             this._position = pos;
             this._velocity = vel;
@@ -1126,6 +1225,9 @@ var VERVE;
             let geometry = new VERVE.CircleGeometry(50, 90);
             let material = new VERVE.BasicMaterial("#ffff00");
             this._shapeComponent = new VERVE.ShapeComponent(geometry, material);
+        }
+        get mass() {
+            return this._mass;
         }
         get velocity() {
             return this._velocity;
@@ -1537,7 +1639,7 @@ gameObject.addComponent(spriteComponent);
 let scene2 = new VERVE.Scene();
 scene2.addObject(gameObject);
 let updating = true;
-material.color = "rbga(255, 255, 0, 40)";
+material.color = "rgba(255, 255, 0, 40)";
 let animateMaterial = new VERVE.TextureMaterial(spriteImage);
 let animateSprite = new VERVE.AnimatedComponent(108, 140, 2, 8, animateMaterial);
 animateSprite.startAnimation = true;
@@ -1566,8 +1668,8 @@ animateSprite.frameTime = 100;
 let gameObject3 = new VERVE.GameObject();
 gameObject3.x = 320;
 gameObject3.y = 190;
-let physicsObject = new VERVE.PhysicsObject(new VERVE.Vector2(gameObject3.x, gameObject3.y), new VERVE.Vector2(0, 0));
-let physicsObject2 = new VERVE.PhysicsObject(new VERVE.Vector2(gameObject.x, 280), new VERVE.Vector2(0, 0));
+let physicsObject = new VERVE.PhysicsObject(new VERVE.Vector2(gameObject3.x, gameObject3.y), new VERVE.Vector2(2, 0));
+let physicsObject2 = new VERVE.PhysicsObject(new VERVE.Vector2(gameObject.x, 300), new VERVE.Vector2(2, 0));
 gameObject3.addComponent(animateSprite);
 scene.addObject(gameObject3);
 animateSprite.setMouse(physicsObject.shape);
@@ -1588,19 +1690,23 @@ function start() {
     physicsObject.update();
     physicsObject2.update();
     let pos = physicsObject.getPos();
+    let pos2 = physicsObject2.getPos();
     gameObject3.x = pos.x;
     gameObject3.y = pos.y;
     if (pos.x > renderer.width || pos.x < 0) {
-        physicsObject._velocity.x = -physicsObject._velocity.x;
-        if (physicsObject._velocity.x < 0) {
+        physicsObject.velocity.x = -physicsObject.velocity.x;
+        if (physicsObject.velocity.x < 0) {
             animateSprite.setFrameSequence(frameSequence2);
         }
         else {
             animateSprite.setFrameSequence(frameSequence1);
         }
     }
+    if (pos2.x > renderer.width || pos2.x < 0) {
+        physicsObject2.velocity.x = -physicsObject2.velocity.x;
+    }
 }
-VERVE.Color.getColor("rbga(255, 45, 78, 20)");
+VERVE.Color.getColor("rgba(255, 45, 78, 20)");
 window.onload = () => {
     console.log(imageForTexture);
     renderer.tempFun();
@@ -1614,19 +1720,13 @@ gameObject4.y = 200;
 let fontImage = new Image();
 fontImage.src = `Assets/Font/font_0.png`;
 let text = "THIS IS TEXT";
-let xhttp = new XMLHttpRequest();
-xhttp.onreadystatechange = function () {
-    if (this.readyState == 4 && this.status === 200) {
-        content = xhttp.responseText;
-        textComponent = new VERVE.TextComponent(text, content, fontImage);
-        gameObject4.addComponent(textComponent);
-        scene.addObject(gameObject4);
-    }
-    else {
-        console.log(this.readyState);
-        console.log(this.status);
-    }
-};
-xhttp.open("GET", "Assets/Font/font.fnt");
-xhttp.send();
+VERVE.FontLoader.load("Assets/Font/font.fnt", "arial", () => {
+    textComponent = new VERVE.TextComponent(text, "arial");
+    gameObject4.addComponent(textComponent);
+});
+VERVE.FontLoader.load("Assets/Font/comic_sans.fnt", "comic", () => {
+    textComponent.changeFont("comic");
+    textComponent.changeText("Text has been changed");
+});
+scene.addObject(gameObject4);
 //# sourceMappingURL=VERVE.js.map

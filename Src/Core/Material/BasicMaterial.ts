@@ -3,13 +3,11 @@ namespace VERVE {
 
     export class BasicMaterial extends Material{
         
-        private _color: Color;
+        // private _color: Color;
         // public get color(): Color {
         //     return this._color;
         // }
-        public set color(value:string) {
-            this._color = Color.getColor(value);
-        }
+      
         constructor(color:string) {
             super();
             this._color = Color.getColor(color);

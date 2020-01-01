@@ -49,8 +49,12 @@ namespace VERVE {
             this.isLoading = false; // should be think about this.
         } 
         public addComponent(component:IComponent):void {
+            if(component==undefined) {
+                throw new Error(`component is not define`)
+            }
             this._component.push(component);
             component.parent = this;
+            this.isLoading = true;
         }
         public removeComponent(component:IComponent):void {
             let index = this._component.indexOf(component);

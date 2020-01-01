@@ -4,11 +4,19 @@ namespace VERVE {
         public shape:IShape;
         private _type:"static" | "dynamic" = "dynamic";
         private _velocity: Vector2;
+       
+        private _mass: number = 1;
+        public get mass(): number {
+            return this._mass;
+        }
+        // public set mass(value: number) {
+        //     this._mass = value;
+        // }
+        private _restitution:number = 0.8;
 
         // temp code;
         private _shapeComponent:ShapeComponent;
         public isLoading = true;
-        
         //
         public get velocity(): Vector2 {
             return this._velocity;

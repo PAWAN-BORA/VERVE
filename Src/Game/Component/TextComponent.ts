@@ -3,7 +3,7 @@ namespace VERVE {
     export class TextComponent implements IComponent {
         private _text:string;
         private _geometry:Geometry;
-        private _material:Material;
+        private _material:TextureMaterial;
         private _buffer: TextureBuffer;
         private _transform:Transform;
         private _localMatrix:Matrix4X4;
@@ -35,14 +35,23 @@ namespace VERVE {
             this._transform.scale.x = x;
             this._transform.scale.y = y;
         }
-        constructor(text:string, data:string, image:HTMLImageElement) {
+        constructor(text:string, fontName:string) {
             this._text = text;
             this._transform = new Transform();
-            this._material = new TextureMaterial(image);
-            this._BitmapFont = new BitmapFont(data);
+            this._BitmapFont = FontLoader.bitmapFont[fontName];
+            this._material = new TextureMaterial(this._BitmapFont.fontImage);
+            this._material.color = "#000000";  
         }
         public center():void {
             this._transform.position.x = -this._width/2;
+        }
+        public changeFont(fontName:string):void {
+            this._BitmapFont = FontLoader.bitmapFont[fontName];
+            this._material.changeTexture(this._BitmapFont.fontImage);
+            this.changeText(this._text);
+        }
+        public set color(color:string) {
+            this._material.color = color;
         }
         public changeText(text:string):void {
             this._text = text;

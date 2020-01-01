@@ -20,6 +20,9 @@ namespace VERVE {
 
         }
         public addObject(gameObject:GameObject):void {
+            if(gameObject==undefined) {
+                throw new Error(`game object is not define`)
+            }
             this._gameObjects.push(gameObject);
         }
         public update(delta:number):void {

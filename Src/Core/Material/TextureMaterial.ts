@@ -13,9 +13,15 @@ namespace VERVE {
         public loadTexture():void {
             this._texture.load(this._image);
         }
+        public changeTexture(image:HTMLImageElement):void {
+            this._image = image;
+            this.loadTexture();
+        }
         public loadUniform(gl:WebGLRenderingContext, shader:Shader): void {
             let colorLocation = shader.getUniformLocation("u_color");
-            gl.uniform4f(colorLocation, 1, 1, 1, 1);
+            // console.log(this._color)
+            gl.uniform4fv(colorLocation, new Float32Array(this._color.toFloatArray()));
         }
+        
     }
 }

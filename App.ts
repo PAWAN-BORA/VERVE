@@ -60,7 +60,7 @@ scene2.addObject(gameObject)
 // scene2.addObject(spriteComponent2);
 // ellispeComponent.rotate = Math.PI/2;
 let updating = true;
-material.color = "rbga(255, 255, 0, 40)";
+material.color = "rgba(255, 255, 0, 40)";
 let animateMaterial = new VERVE.TextureMaterial(spriteImage);
 let animateSprite = new VERVE.AnimatedComponent(108, 140, 2, 8, animateMaterial);
 animateSprite.startAnimation = true;
@@ -91,8 +91,8 @@ let gameObject3 = new VERVE.GameObject();
 gameObject3.x = 320;
 gameObject3.y = 190;
 
-let physicsObject = new VERVE.PhysicsObject(new VERVE.Vector2(gameObject3.x, gameObject3.y), new VERVE.Vector2(0, 0))
-let physicsObject2 = new VERVE.PhysicsObject(new VERVE.Vector2(gameObject.x, 280), new VERVE.Vector2(0, 0))
+let physicsObject = new VERVE.PhysicsObject(new VERVE.Vector2(gameObject3.x, gameObject3.y), new VERVE.Vector2(2, 0))
+let physicsObject2 = new VERVE.PhysicsObject(new VERVE.Vector2(gameObject.x, 300), new VERVE.Vector2(2, 0))
 // console.log(physicsObject)
 gameObject3.addComponent(animateSprite);
 scene.addObject(gameObject3);
@@ -121,11 +121,12 @@ function start() {
     physicsObject.update();
     physicsObject2.update();
     let pos = physicsObject.getPos();
+    let pos2 = physicsObject2.getPos();
     gameObject3.x = pos.x;
     gameObject3.y = pos.y;
     if(pos.x>renderer.width || pos.x<0) {
-        physicsObject._velocity.x = -physicsObject._velocity.x;
-        if(physicsObject._velocity.x<0) {
+        physicsObject.velocity.x = -physicsObject.velocity.x;
+        if(physicsObject.velocity.x<0) {
             animateSprite.setFrameSequence(frameSequence2); 
             
         } else {
@@ -133,11 +134,14 @@ function start() {
 
         }
     }
+    if(pos2.x>renderer.width || pos2.x<0) {
+        physicsObject2.velocity.x = -physicsObject2.velocity.x;
+    }
     // physicsObject.render(renderer);
     // console.log(spriteComponent2.rotate)
 }
 
-VERVE.Color.getColor("rbga(255, 45, 78, 20)");
+VERVE.Color.getColor("rgba(255, 45, 78, 20)");
 window.onload = ()=>{
     console.log(imageForTexture);
     renderer.tempFun();
@@ -153,18 +157,27 @@ gameObject4.y = 200;
 let fontImage = new Image();
 fontImage.src =  `Assets/Font/font_0.png`;
 let text = "THIS IS TEXT";
-let xhttp = new XMLHttpRequest();
-xhttp.onreadystatechange = function () {
-    if(this.readyState==4 && this.status===200) {
-        content = xhttp.responseText;
-        textComponent = new VERVE.TextComponent(text, content, fontImage);
-        gameObject4.addComponent(textComponent);
-        // textComponent.x = -50;
-        scene.addObject(gameObject4);
-    } else {
-        console.log(this.readyState);
-        console.log(this.status);
-    }
-};
-xhttp.open("GET", "Assets/Font/font.fnt");
-xhttp.send();
+VERVE.FontLoader.load("Assets/Font/font.fnt", "arial", ()=>{
+    textComponent = new VERVE.TextComponent(text, "arial");
+    gameObject4.addComponent(textComponent);
+});
+VERVE.FontLoader.load("Assets/Font/comic_sans.fnt", "comic", ()=>{
+    textComponent.changeFont("comic");
+    textComponent.changeText("Text has been changed");
+})
+scene.addObject(gameObject4);
+// let xhttp = new XMLHttpRequest();
+// xhttp.onreadystatechange = function () {
+//     if(this.readyState==4 && this.status===200) {
+//         content = xhttp.responseText;
+//         textComponent = new VERVE.TextComponent(text, content, fontImage);
+//         gameObject4.addComponent(textComponent);
+//         // textComponent.x = -50;
+//         scene.addObject(gameObject4);
+//     } else {
+//         console.log(this.readyState);
+//         console.log(this.status);
+//     }
+// };
+// xhttp.open("GET", "Assets/Font/font.fnt");
+// xhttp.send();

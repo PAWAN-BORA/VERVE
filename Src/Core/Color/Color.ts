@@ -22,45 +22,45 @@ namespace VERVE {
                 g = parseInt(value.substring(2, 4), 16);
                 b = parseInt(value.substring(4, 6), 16);
                 return new Color(r, g, b);
-            } else if(color.substring(0, 4)==="rbga") {
-                let value = color.split("rbga")[1].slice(1, -1);
+            } else if(color.substring(0, 4)==="rgba") {
+                let value = color.split("rgba")[1].slice(1, -1);
                 let colors = value.split(",");
                 r = parseInt(colors[0]);
                 if(isNaN(r)) {
-                    throw new Error(`wrong rbga format: red value is not defined`);
+                    throw new Error(`wrong rgba format: red value is not defined`);
                 }
                 g = parseInt(colors[1]);
                 if(isNaN(g)) {
-                    throw new Error(`wrong rbga format: green value is not defined`);
+                    throw new Error(`wrong rgba format: green value is not defined`);
                 }
                 b = parseInt(colors[2]);
                 if(isNaN(b)) {
-                    throw new Error(`wrong rbga format: blue value is not defined`);
+                    throw new Error(`wrong rgba format: blue value is not defined`);
                 }
                 a = parseInt(colors[3]);
                 if(isNaN(a)) {
-                    throw new Error(`wrong rbga format: alpah value is not defined`);
+                    throw new Error(`wrong rgba format: alpah value is not defined`);
                 }
                 return new Color(r, g, b, a);
-            } else if(color.substring(0, 3)==="rbg") {
-                let value = color.split("rbga")[1].slice(1, -1);
+            } else if(color.substring(0, 3)==="rgb") {
+                let value = color.split("rgb")[1].slice(1, -1);
                 let colors = value.split(",");
                 r = parseInt(colors[0]);
                 if(isNaN(r)) {
-                    throw new Error(`wrong rbga format: red value is not defined`);
+                    throw new Error(`wrong rgba format: red value is not defined`);
                 }
                 g = parseInt(colors[1]);
                 if(isNaN(g)) {
-                    throw new Error(`wrong rbga format: green value is not defined`);
+                    throw new Error(`wrong rgba format: green value is not defined`);
                 }
                 b = parseInt(colors[2]);
                 if(isNaN(b)) {
-                    throw new Error(`wrong rbga format: blue value is not defined`);
+                    throw new Error(`wrong rgba format: blue value is not defined`);
                 }
                 return new Color(r, g, b);
             }
-            console.error(`color format "${color}" is incorrect. setting white for the color`)
-            return new Color(255, 255, 255);
+            console.error(`color format "${color}" is incorrect.`)
+            return undefined;
         }
     }
 }
