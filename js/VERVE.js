@@ -1181,6 +1181,8 @@ var VERVE;
             }
         }
         checkPostionAfterCollistion(obj1, obj2) {
+            obj1.position.x -= obj1.velocity.x;
+            obj2.position.x -= obj2.velocity.x;
             let res = 0.5;
             let finVel1 = new VERVE.Vector2(), finVel2 = new VERVE.Vector2();
             let delV = obj1.velocity.x - obj2.velocity.x;
@@ -1668,8 +1670,8 @@ animateSprite.frameTime = 100;
 let gameObject3 = new VERVE.GameObject();
 gameObject3.x = 320;
 gameObject3.y = 190;
-let physicsObject = new VERVE.PhysicsObject(new VERVE.Vector2(gameObject3.x, gameObject3.y), new VERVE.Vector2(2, 0));
-let physicsObject2 = new VERVE.PhysicsObject(new VERVE.Vector2(gameObject.x, 300), new VERVE.Vector2(2, 0));
+let physicsObject = new VERVE.PhysicsObject(new VERVE.Vector2(600, gameObject3.y), new VERVE.Vector2(50, 0));
+let physicsObject2 = new VERVE.PhysicsObject(new VERVE.Vector2(gameObject.x, 280), new VERVE.Vector2(50, 0));
 gameObject3.addComponent(animateSprite);
 scene.addObject(gameObject3);
 animateSprite.setMouse(physicsObject.shape);

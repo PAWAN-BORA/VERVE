@@ -29,7 +29,10 @@ namespace VERVE {
             }
         }
         private checkPostionAfterCollistion(obj1:PhysicsObject, obj2:PhysicsObject) {
-            // formula is wrong;    
+            // formula is wrong;  
+            // obj1.position.add(obj1.velocity);
+            obj1.position.x -= obj1.velocity.x
+            obj2.position.x -= obj2.velocity.x
             let res:number = 0.5;
             let finVel1 = new Vector2(), finVel2 = new Vector2();
             let delV = obj1.velocity.x - obj2.velocity.x;
@@ -40,6 +43,7 @@ namespace VERVE {
             finVel2.x = res*delV+finVel1.x;
             obj1.velocity.x = finVel1.x;
             obj2.velocity.x = finVel2.x;
+           
             console.log(obj1.velocity.x, obj2.velocity.x);
             
         }
