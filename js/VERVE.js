@@ -340,6 +340,18 @@ var VERVE;
             this.x = x;
             this.y = y;
         }
+        static add(v1, v2) {
+            let vec = new Vector2();
+            vec.x = v1.x + v2.x;
+            vec.y = v1.y + v2.y;
+            return vec;
+        }
+        static subtract(v1, v2) {
+            let vec = new Vector2();
+            vec.x = v1.x - v2.x;
+            vec.y = v1.y - v2.y;
+            return vec;
+        }
         toArray() {
             return [this.x, this.y];
         }
@@ -351,6 +363,10 @@ var VERVE;
             this.x -= vector.x;
             this.y -= vector.y;
         }
+        multiply(vector) {
+            this.x *= vector.x;
+            this.y *= vector.y;
+        }
         set(x, y) {
             this.x = x;
             this.y = y;
@@ -360,6 +376,14 @@ var VERVE;
         }
         magnitude() {
             return Math.sqrt(Math.pow((this.x), 2) + Math.pow((this.y), 2));
+        }
+        dotProduct(vec) {
+            return this.x * vec.x + this.y * vec.y;
+        }
+        normalize() {
+            let magnitude = this.magnitude();
+            this.x = this.x / magnitude;
+            this.y = this.y / magnitude;
         }
     }
     VERVE.Vector2 = Vector2;
@@ -1181,15 +1205,24 @@ var VERVE;
             }
         }
         checkPostionAfterCollistion(obj1, obj2) {
-            let res = 0.5;
+            obj1.position.x -= obj1.velocity.x;
+            obj2.position.x -= obj2.velocity.x;
+            let res = 1;
             let finVel1 = new VERVE.Vector2(), finVel2 = new VERVE.Vector2();
+            let relVel = VERVE.Vector2.subtract(obj1.velocity, obj2.velocity);
+            let colliVec = VERVE.Vector2.subtract(obj1.position, obj2.position);
+            colliVec.normalize();
             let delV = obj1.velocity.x - obj2.velocity.x;
             let leftSide = obj1.mass * obj1.velocity.x + obj2.mass * obj2.velocity.x;
             finVel1.x = (leftSide - obj2.mass * (res) * delV) / (obj1.mass + obj2.mass);
             finVel2.x = res * delV + finVel1.x;
+            let delVec = new VERVE.Vector2(delV, 0);
+            let speed = colliVec.dotProduct(delVec);
+            console.log(speed, colliVec.x, delV);
+            finVel1.x = finVel1.x * colliVec.x;
+            finVel2.x = finVel2.x * colliVec.x;
             obj1.velocity.x = finVel1.x;
             obj2.velocity.x = finVel2.x;
-            console.log(obj1.velocity.x, obj2.velocity.x);
         }
         update() {
             for (let o of this._objects) {
@@ -1669,7 +1702,7 @@ let gameObject3 = new VERVE.GameObject();
 gameObject3.x = 320;
 gameObject3.y = 190;
 let physicsObject = new VERVE.PhysicsObject(new VERVE.Vector2(gameObject3.x, gameObject3.y), new VERVE.Vector2(2, 0));
-let physicsObject2 = new VERVE.PhysicsObject(new VERVE.Vector2(gameObject.x, 300), new VERVE.Vector2(2, 0));
+let physicsObject2 = new VERVE.PhysicsObject(new VERVE.Vector2(gameObject.x - 200, gameObject3.y), new VERVE.Vector2(2, 0));
 gameObject3.addComponent(animateSprite);
 scene.addObject(gameObject3);
 animateSprite.setMouse(physicsObject.shape);
@@ -1702,8 +1735,14 @@ function start() {
             animateSprite.setFrameSequence(frameSequence1);
         }
     }
+    if (pos.y > renderer.height || pos.y < 0) {
+        physicsObject.velocity.y = -physicsObject.velocity.y;
+    }
     if (pos2.x > renderer.width || pos2.x < 0) {
         physicsObject2.velocity.x = -physicsObject2.velocity.x;
+    }
+    if (pos2.y > renderer.height || pos2.y < 0) {
+        physicsObject2.velocity.y = -physicsObject2.velocity.y;
     }
 }
 VERVE.Color.getColor("rgba(255, 45, 78, 20)");

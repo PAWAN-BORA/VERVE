@@ -92,7 +92,7 @@ gameObject3.x = 320;
 gameObject3.y = 190;
 
 let physicsObject = new VERVE.PhysicsObject(new VERVE.Vector2(gameObject3.x, gameObject3.y), new VERVE.Vector2(2, 0))
-let physicsObject2 = new VERVE.PhysicsObject(new VERVE.Vector2(gameObject.x, 300), new VERVE.Vector2(2, 0))
+let physicsObject2 = new VERVE.PhysicsObject(new VERVE.Vector2(gameObject.x-200, gameObject3.y), new VERVE.Vector2(2, 0))
 // console.log(physicsObject)
 gameObject3.addComponent(animateSprite);
 scene.addObject(gameObject3);
@@ -134,9 +134,16 @@ function start() {
 
         }
     }
+    if(pos.y>renderer.height || pos.y<0) {
+        physicsObject.velocity.y = -physicsObject.velocity.y;
+    }
     if(pos2.x>renderer.width || pos2.x<0) {
         physicsObject2.velocity.x = -physicsObject2.velocity.x;
     }
+    if(pos2.y>renderer.height || pos2.y<0) {
+        physicsObject2.velocity.y = -physicsObject2.velocity.y;
+    }
+    
     // physicsObject.render(renderer);
     // console.log(spriteComponent2.rotate)
 }
