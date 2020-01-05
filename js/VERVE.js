@@ -340,26 +340,63 @@ var VERVE;
             this.x = x;
             this.y = y;
         }
+        static add(v1, v2) {
+            let vec = new Vector2();
+            vec.x = v1.x + v2.x;
+            vec.y = v1.y + v2.y;
+            return vec;
+        }
+        static subtract(v1, v2) {
+            let vec = new Vector2();
+            vec.x = v1.x - v2.x;
+            vec.y = v1.y - v2.y;
+            return vec;
+        }
         toArray() {
             return [this.x, this.y];
         }
         add(vector) {
             this.x += vector.x;
             this.y += vector.y;
+            return this;
         }
         subtract(vector) {
             this.x -= vector.x;
             this.y -= vector.y;
+            return this;
+        }
+        multiply(vector) {
+            this.x *= vector.x;
+            this.y *= vector.y;
+            return this;
+        }
+        divide(vector) {
+            this.x /= vector.x;
+            this.y /= vector.y;
+            return this;
         }
         set(x, y) {
             this.x = x;
             this.y = y;
         }
         scalarMultiply(scalar) {
-            return new Vector2(this.x * scalar, this.y * scalar);
+            this.x *= scalar;
+            this.y *= scalar;
+            return this;
         }
         magnitude() {
             return Math.sqrt(Math.pow((this.x), 2) + Math.pow((this.y), 2));
+        }
+        dotProduct(vec) {
+            return this.x * vec.x + this.y * vec.y;
+        }
+        normalize() {
+            let magnitude = this.magnitude();
+            this.x = this.x / magnitude;
+            this.y = this.y / magnitude;
+        }
+        clone() {
+            return new Vector2(this.x, this.y);
         }
     }
     VERVE.Vector2 = Vector2;
@@ -797,6 +834,8 @@ var VERVE;
                 }
             }
             this._frameSequence = frameSequence;
+            this._num = 0;
+            console.log("setting the frame");
         }
         load(gl) {
             this._buffer = new VERVE.TextureBuffer(gl);
@@ -1181,21 +1220,44 @@ var VERVE;
             }
         }
         checkPostionAfterCollistion(obj1, obj2) {
-            obj1.position.x -= obj1.velocity.x;
-            obj2.position.x -= obj2.velocity.x;
-            let res = 0.5;
+            let restituion = Math.max(obj1.restitution, obj2.restitution);
+            let res = 1;
             let finVel1 = new VERVE.Vector2(), finVel2 = new VERVE.Vector2();
-            let delV = obj1.velocity.x - obj2.velocity.x;
+            let relVel = VERVE.Vector2.subtract(obj1.velocity, obj2.velocity);
+            let colliVec = VERVE.Vector2.subtract(obj2.position, obj1.position);
+            let dirfirst = relVel.dotProduct(colliVec);
+            if (dirfirst < 0) {
+                return;
+            }
+            let delV = obj2.velocity.x - obj1.velocity.x;
             let leftSide = obj1.mass * obj1.velocity.x + obj2.mass * obj2.velocity.x;
+            let firstVel = obj1.velocity.clone();
+            firstVel.scalarMultiply(obj1.mass);
+            let secondVel = obj2.velocity.clone();
+            secondVel.scalarMultiply(obj2.mass);
+            let leftVect = VERVE.Vector2.add(firstVel, secondVel);
+            let finObj1Vel, finObj2Vel;
             finVel1.x = (leftSide - obj2.mass * (res) * delV) / (obj1.mass + obj2.mass);
             finVel2.x = res * delV + finVel1.x;
-            obj1.velocity.x = finVel1.x;
-            obj2.velocity.x = finVel2.x;
-            console.log(obj1.velocity.x, obj2.velocity.x);
+            finObj1Vel = leftVect.subtract(relVel.clone().scalarMultiply(obj2.mass * res)).scalarMultiply(1 / (obj1.mass + obj2.mass));
+            finObj2Vel = relVel.clone().scalarMultiply(res).add(finObj1Vel);
+            let dir = VERVE.Vector2.subtract(finObj1Vel, finObj2Vel);
+            let diresign = colliVec.dotProduct(dir);
+            if ((finObj1Vel.x < 0 && finObj2Vel.x < 0) || (finObj1Vel.x > 0 && finObj2Vel.x > 0) || (finObj1Vel.y - finObj2Vel.y) > 0) {
+            }
+            obj1.velocity.set(finObj1Vel.x, finObj1Vel.y);
+            obj2.velocity.set(finObj2Vel.x, finObj2Vel.y);
         }
         update() {
             for (let o of this._objects) {
                 o.update();
+                let pos = o.getPos();
+                if (pos.x > renderer.width || pos.x < 0) {
+                    o.velocity.x = -o.velocity.x;
+                }
+                if (pos.y > renderer.height || pos.y < 0) {
+                    o.velocity.y = -o.velocity.y;
+                }
             }
             this.checkCollision();
         }
@@ -1222,14 +1284,23 @@ var VERVE;
             this.isLoading = true;
             this._position = pos;
             this._velocity = vel;
-            this.shape = new VERVE.Circle(this.position, 50);
+            this.shape = new VERVE.Circle(this.position, 10);
             console.log(this._position, "thsids isd isd fsif");
-            let geometry = new VERVE.CircleGeometry(50, 90);
-            let material = new VERVE.BasicMaterial("#ffff00");
+            let geometry = new VERVE.CircleGeometry(10, 90);
+            let r = Math.floor(Math.random() * 255);
+            let g = Math.floor(Math.random() * 255);
+            let b = Math.floor(Math.random() * 255);
+            let material = new VERVE.BasicMaterial(`rgb(${r}, ${g}, ${b})`);
             this._shapeComponent = new VERVE.ShapeComponent(geometry, material);
         }
         get mass() {
             return this._mass;
+        }
+        get restitution() {
+            return this._restitution;
+        }
+        set restitution(value) {
+            this._restitution = value;
         }
         get velocity() {
             return this._velocity;
@@ -1451,6 +1522,7 @@ var VERVE;
             let endTime = performance.now();
             let delta = endTime - this._startTime;
             scene.update(delta);
+            this.showFPS(delta);
             this._startTime = endTime;
         }
         render(scene) {
@@ -1665,19 +1737,27 @@ let frameSequence2 = [
     { x: 7, y: 2 },
     { x: 8, y: 2 },
 ];
+let frameSequence3 = [
+    { x: 1, y: 2 },
+];
 animateSprite.setFrameSequence(frameSequence1);
 animateSprite.frameTime = 100;
 let gameObject3 = new VERVE.GameObject();
 gameObject3.x = 320;
 gameObject3.y = 190;
-let physicsObject = new VERVE.PhysicsObject(new VERVE.Vector2(600, gameObject3.y), new VERVE.Vector2(50, 0));
-let physicsObject2 = new VERVE.PhysicsObject(new VERVE.Vector2(gameObject.x, 280), new VERVE.Vector2(50, 0));
+let physicsObject = new VERVE.PhysicsObject(new VERVE.Vector2(0, 400), new VERVE.Vector2(5, -8));
+let physicsObject2 = new VERVE.PhysicsObject(new VERVE.Vector2(400, 0), new VERVE.Vector2(-5, 4));
 gameObject3.addComponent(animateSprite);
 scene.addObject(gameObject3);
 animateSprite.setMouse(physicsObject.shape);
 let physicesEngine = new VERVE.PhysicsEngine();
 physicesEngine.addObjects(physicsObject);
 physicesEngine.addObjects(physicsObject2);
+let physics = [];
+for (let i = 0; i < 1000; i++) {
+    let phy = new VERVE.PhysicsObject(new VERVE.Vector2(0, 100), new VERVE.Vector2(Math.random() * 8, Math.random() * 8));
+    physicesEngine.addObjects(phy);
+}
 scene.addObject(physicesEngine);
 function start() {
     requestAnimationFrame(start);
@@ -1693,20 +1773,6 @@ function start() {
     physicsObject2.update();
     let pos = physicsObject.getPos();
     let pos2 = physicsObject2.getPos();
-    gameObject3.x = pos.x;
-    gameObject3.y = pos.y;
-    if (pos.x > renderer.width || pos.x < 0) {
-        physicsObject.velocity.x = -physicsObject.velocity.x;
-        if (physicsObject.velocity.x < 0) {
-            animateSprite.setFrameSequence(frameSequence2);
-        }
-        else {
-            animateSprite.setFrameSequence(frameSequence1);
-        }
-    }
-    if (pos2.x > renderer.width || pos2.x < 0) {
-        physicsObject2.velocity.x = -physicsObject2.velocity.x;
-    }
 }
 VERVE.Color.getColor("rgba(255, 45, 78, 20)");
 window.onload = () => {

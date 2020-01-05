@@ -85,14 +85,17 @@ let frameSequence2 = [
     {x:7, y:2},
     {x:8, y:2},
 ]
+let frameSequence3 = [
+    {x:1, y:2},
+]
 animateSprite.setFrameSequence(frameSequence1);
 animateSprite.frameTime = 100;
 let gameObject3 = new VERVE.GameObject();
 gameObject3.x = 320;
 gameObject3.y = 190;
 
-let physicsObject = new VERVE.PhysicsObject(new VERVE.Vector2(600, gameObject3.y), new VERVE.Vector2(50, 0))
-let physicsObject2 = new VERVE.PhysicsObject(new VERVE.Vector2(gameObject.x, 280), new VERVE.Vector2(50, 0))
+let physicsObject = new VERVE.PhysicsObject(new VERVE.Vector2(0, 400), new VERVE.Vector2(5,-8))
+let physicsObject2 = new VERVE.PhysicsObject(new VERVE.Vector2(400, 0), new VERVE.Vector2(-5, 4))
 // console.log(physicsObject)
 gameObject3.addComponent(animateSprite);
 scene.addObject(gameObject3);
@@ -101,6 +104,11 @@ animateSprite.setMouse(physicsObject.shape);
 let physicesEngine = new VERVE.PhysicsEngine();
 physicesEngine.addObjects(physicsObject)
 physicesEngine.addObjects(physicsObject2)
+let physics:VERVE.PhysicsObject[] = [];
+for(let i=0; i<1000; i++) {
+    let phy = new VERVE.PhysicsObject(new VERVE.Vector2(0, 100), new VERVE.Vector2(Math.random()*8, Math.random()*8))
+    physicesEngine.addObjects(phy);
+}
 scene.addObject(physicesEngine);
 //
 function start() {
@@ -122,21 +130,30 @@ function start() {
     physicsObject2.update();
     let pos = physicsObject.getPos();
     let pos2 = physicsObject2.getPos();
-    gameObject3.x = pos.x;
-    gameObject3.y = pos.y;
-    if(pos.x>renderer.width || pos.x<0) {
-        physicsObject.velocity.x = -physicsObject.velocity.x;
-        if(physicsObject.velocity.x<0) {
-            animateSprite.setFrameSequence(frameSequence2); 
+    // gameObject3.x = pos.x;
+    // gameObject3.y = pos.y;
+    // if(pos.x>renderer.width || pos.x<0) {
+    //     // physicsObject.velocity.x = -physicsObject.velocity.x;
+    //     if(physicsObject.velocity.x<0) {
+    //         animateSprite.setFrameSequence(frameSequence2); 
             
-        } else {
-            animateSprite.setFrameSequence(frameSequence1); 
+    //     } else if(physicsObject.velocity.x>0){
+    //         animateSprite.setFrameSequence(frameSequence1); 
 
-        }
-    }
-    if(pos2.x>renderer.width || pos2.x<0) {
-        physicsObject2.velocity.x = -physicsObject2.velocity.x;
-    }
+    //     } else {
+    //         animateSprite.setFrameSequence(frameSequence3);
+    //     }
+    // }
+    // if(pos.y>renderer.height || pos.y<0) {
+    //     physicsObject.velocity.y = -physicsObject.velocity.y;
+    // }
+    // if(pos2.x>renderer.width || pos2.x<0) {
+    //     physicsObject2.velocity.x = -physicsObject2.velocity.x;
+    // }
+    // if(pos2.y>renderer.height || pos2.y<0) {
+    //     physicsObject2.velocity.y = -physicsObject2.velocity.y;
+    // }
+    
     // physicsObject.render(renderer);
     // console.log(spriteComponent2.rotate)
 }

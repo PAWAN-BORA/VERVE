@@ -12,7 +12,13 @@ namespace VERVE {
         // public set mass(value: number) {
         //     this._mass = value;
         // }
-        private _restitution:number = 0.8;
+        private _restitution: number = 0.8;
+        public get restitution(): number {
+            return this._restitution;
+        }
+        public set restitution(value: number) {
+            this._restitution = value;
+        }
 
         // temp code;
         private _shapeComponent:ShapeComponent;
@@ -36,10 +42,13 @@ namespace VERVE {
             this._velocity = vel;
             // temp code
             // this.shape = new Rectangle(this.position, 100, 100);
-            this.shape = new Circle(this.position, 50);
+            this.shape = new Circle(this.position, 10);
             console.log(this._position , "thsids isd isd fsif");
-            let geometry = new CircleGeometry(50, 90);
-            let material = new BasicMaterial("#ffff00")
+            let geometry = new CircleGeometry(10, 90);
+            let r = Math.floor(Math.random()*255);
+            let g = Math.floor(Math.random()*255);
+            let b = Math.floor(Math.random()*255);
+            let material = new BasicMaterial(`rgb(${r}, ${g}, ${b})`)
             this._shapeComponent = new ShapeComponent(geometry, material);
         }
         public getPos():Vector2 {

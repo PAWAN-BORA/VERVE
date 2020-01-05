@@ -79,6 +79,8 @@ namespace VERVE {
             }
 
             this._frameSequence = frameSequence;
+            this._num =0;
+            console.log("setting the frame")
         }
         public load(gl: WebGLRenderingContext): void {
             this._buffer = new TextureBuffer(gl);
