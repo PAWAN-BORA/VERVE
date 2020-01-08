@@ -63,7 +63,7 @@ namespace VERVE {
             let endTime = performance.now();
             let delta = endTime - this._startTime;
             scene.update(delta);
-            this.showFPS(delta);
+            // this.showFPS(delta);
             
             this._startTime = endTime;
         }

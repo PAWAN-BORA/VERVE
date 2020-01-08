@@ -1222,31 +1222,22 @@ var VERVE;
         checkPostionAfterCollistion(obj1, obj2) {
             let restituion = Math.max(obj1.restitution, obj2.restitution);
             let res = 1;
-            let finVel1 = new VERVE.Vector2(), finVel2 = new VERVE.Vector2();
-            let relVel = VERVE.Vector2.subtract(obj1.velocity, obj2.velocity);
-            let colliVec = VERVE.Vector2.subtract(obj2.position, obj1.position);
-            let dirfirst = relVel.dotProduct(colliVec);
-            if (dirfirst < 0) {
-                return;
+            let relVel = VERVE.Vector2.subtract(obj2.velocity, obj1.velocity);
+            let unit = relVel.clone();
+            unit.normalize();
+            let normal = new VERVE.Vector2(0, 1);
+            let velAlongNormal = relVel.dotProduct(normal);
+            let implus = -(1 + res) * (velAlongNormal);
+            implus = implus / 2;
+            console.log(implus);
+            if (implus == 0) {
+                obj1.velocity.scalarMultiply(-1 * res);
+                obj2.velocity.scalarMultiply(-1 * res);
             }
-            let delV = obj2.velocity.x - obj1.velocity.x;
-            let leftSide = obj1.mass * obj1.velocity.x + obj2.mass * obj2.velocity.x;
-            let firstVel = obj1.velocity.clone();
-            firstVel.scalarMultiply(obj1.mass);
-            let secondVel = obj2.velocity.clone();
-            secondVel.scalarMultiply(obj2.mass);
-            let leftVect = VERVE.Vector2.add(firstVel, secondVel);
-            let finObj1Vel, finObj2Vel;
-            finVel1.x = (leftSide - obj2.mass * (res) * delV) / (obj1.mass + obj2.mass);
-            finVel2.x = res * delV + finVel1.x;
-            finObj1Vel = leftVect.subtract(relVel.clone().scalarMultiply(obj2.mass * res)).scalarMultiply(1 / (obj1.mass + obj2.mass));
-            finObj2Vel = relVel.clone().scalarMultiply(res).add(finObj1Vel);
-            let dir = VERVE.Vector2.subtract(finObj1Vel, finObj2Vel);
-            let diresign = colliVec.dotProduct(dir);
-            if ((finObj1Vel.x < 0 && finObj2Vel.x < 0) || (finObj1Vel.x > 0 && finObj2Vel.x > 0) || (finObj1Vel.y - finObj2Vel.y) > 0) {
+            else {
+                obj1.velocity.add(normal.scalarMultiply(implus));
+                obj2.velocity.subtract(normal.scalarMultiply(implus));
             }
-            obj1.velocity.set(finObj1Vel.x, finObj1Vel.y);
-            obj2.velocity.set(finObj2Vel.x, finObj2Vel.y);
         }
         update() {
             for (let o of this._objects) {
@@ -1284,9 +1275,9 @@ var VERVE;
             this.isLoading = true;
             this._position = pos;
             this._velocity = vel;
-            this.shape = new VERVE.Circle(this.position, 10);
+            this.shape = new VERVE.Circle(this.position, 50);
             console.log(this._position, "thsids isd isd fsif");
-            let geometry = new VERVE.CircleGeometry(10, 90);
+            let geometry = new VERVE.CircleGeometry(50, 90);
             let r = Math.floor(Math.random() * 255);
             let g = Math.floor(Math.random() * 255);
             let b = Math.floor(Math.random() * 255);
@@ -1522,7 +1513,6 @@ var VERVE;
             let endTime = performance.now();
             let delta = endTime - this._startTime;
             scene.update(delta);
-            this.showFPS(delta);
             this._startTime = endTime;
         }
         render(scene) {
@@ -1745,8 +1735,8 @@ animateSprite.frameTime = 100;
 let gameObject3 = new VERVE.GameObject();
 gameObject3.x = 320;
 gameObject3.y = 190;
-let physicsObject = new VERVE.PhysicsObject(new VERVE.Vector2(0, 400), new VERVE.Vector2(5, -8));
-let physicsObject2 = new VERVE.PhysicsObject(new VERVE.Vector2(400, 0), new VERVE.Vector2(-5, 4));
+let physicsObject = new VERVE.PhysicsObject(new VERVE.Vector2(0, 200), new VERVE.Vector2(2, 0));
+let physicsObject2 = new VERVE.PhysicsObject(new VERVE.Vector2(400, 200), new VERVE.Vector2(-2, 0));
 gameObject3.addComponent(animateSprite);
 scene.addObject(gameObject3);
 animateSprite.setMouse(physicsObject.shape);
@@ -1755,8 +1745,6 @@ physicesEngine.addObjects(physicsObject);
 physicesEngine.addObjects(physicsObject2);
 let physics = [];
 for (let i = 0; i < 1000; i++) {
-    let phy = new VERVE.PhysicsObject(new VERVE.Vector2(0, 100), new VERVE.Vector2(Math.random() * 8, Math.random() * 8));
-    physicesEngine.addObjects(phy);
 }
 scene.addObject(physicesEngine);
 function start() {

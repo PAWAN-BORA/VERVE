@@ -42,9 +42,9 @@ namespace VERVE {
             this._velocity = vel;
             // temp code
             // this.shape = new Rectangle(this.position, 100, 100);
-            this.shape = new Circle(this.position, 10);
+            this.shape = new Circle(this.position, 50);
             console.log(this._position , "thsids isd isd fsif");
-            let geometry = new CircleGeometry(10, 90);
+            let geometry = new CircleGeometry(50, 90);
             let r = Math.floor(Math.random()*255);
             let g = Math.floor(Math.random()*255);
             let b = Math.floor(Math.random()*255);

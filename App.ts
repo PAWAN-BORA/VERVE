@@ -94,8 +94,8 @@ let gameObject3 = new VERVE.GameObject();
 gameObject3.x = 320;
 gameObject3.y = 190;
 
-let physicsObject = new VERVE.PhysicsObject(new VERVE.Vector2(0, 400), new VERVE.Vector2(5,-8))
-let physicsObject2 = new VERVE.PhysicsObject(new VERVE.Vector2(400, 0), new VERVE.Vector2(-5, 4))
+let physicsObject = new VERVE.PhysicsObject(new VERVE.Vector2(0, 200), new VERVE.Vector2(2, 0))
+let physicsObject2 = new VERVE.PhysicsObject(new VERVE.Vector2(400, 200), new VERVE.Vector2(-2, 0))
 // console.log(physicsObject)
 gameObject3.addComponent(animateSprite);
 scene.addObject(gameObject3);
@@ -106,8 +106,8 @@ physicesEngine.addObjects(physicsObject)
 physicesEngine.addObjects(physicsObject2)
 let physics:VERVE.PhysicsObject[] = [];
 for(let i=0; i<1000; i++) {
-    let phy = new VERVE.PhysicsObject(new VERVE.Vector2(0, 100), new VERVE.Vector2(Math.random()*8, Math.random()*8))
-    physicesEngine.addObjects(phy);
+    // let phy = new VERVE.PhysicsObject(new VERVE.Vector2(0, 100), new VERVE.Vector2(Math.random()*8, Math.random()*8))
+    // physicesEngine.addObjects(phy);
 }
 scene.addObject(physicesEngine);
 //
