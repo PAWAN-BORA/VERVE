@@ -384,6 +384,16 @@ var VERVE;
             this.y *= scalar;
             return this;
         }
+        inverse() {
+            this.x *= -1;
+            this.y *= -1;
+        }
+        rotate(ang) {
+            let x = this.x * Math.cos(ang) - this.y * Math.sin(ang);
+            let y = this.x * Math.sin(ang) + this.y * Math.cos(ang);
+            this.x = x;
+            this.y = y;
+        }
         magnitude() {
             return Math.sqrt(Math.pow((this.x), 2) + Math.pow((this.y), 2));
         }
@@ -392,6 +402,9 @@ var VERVE;
         }
         normalize() {
             let magnitude = this.magnitude();
+            if (magnitude === 0) {
+                return;
+            }
             this.x = this.x / magnitude;
             this.y = this.y / magnitude;
         }
@@ -1193,6 +1206,17 @@ var VERVE;
 })(VERVE || (VERVE = {}));
 var VERVE;
 (function (VERVE) {
+    class Body {
+        constructor(shape, restitution, mass) {
+            this.shape = shape;
+            this.restitution = restitution;
+            this.mass = mass;
+        }
+    }
+    VERVE.Body = Body;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
     class PhysicsEngine {
         constructor() {
             this._objects = [];
@@ -1212,6 +1236,9 @@ var VERVE;
         }
         checkCollision() {
             for (let i = 0; i < this._objects.length; i++) {
+                if (!this._objects[i].isCollidable) {
+                    continue;
+                }
                 for (let j = i + 1; j < this._objects.length; j++) {
                     if (this._objects[i].shape.intersect(this._objects[j].shape)) {
                         this.checkPostionAfterCollistion(this._objects[i], this._objects[j]);
@@ -1220,33 +1247,19 @@ var VERVE;
             }
         }
         checkPostionAfterCollistion(obj1, obj2) {
-            let restituion = Math.max(obj1.restitution, obj2.restitution);
-            let res = 1;
-            let finVel1 = new VERVE.Vector2(), finVel2 = new VERVE.Vector2();
-            let relVel = VERVE.Vector2.subtract(obj1.velocity, obj2.velocity);
+            let res = Math.max(obj1.restitution, obj2.restitution);
+            let relVel = VERVE.Vector2.subtract(obj2.velocity, obj1.velocity);
             let colliVec = VERVE.Vector2.subtract(obj2.position, obj1.position);
-            let dirfirst = relVel.dotProduct(colliVec);
-            if (dirfirst < 0) {
+            colliVec.normalize();
+            let velocityAlongNormal = colliVec.dotProduct(relVel);
+            if (velocityAlongNormal > 0) {
                 return;
             }
-            let delV = obj2.velocity.x - obj1.velocity.x;
-            let leftSide = obj1.mass * obj1.velocity.x + obj2.mass * obj2.velocity.x;
-            let firstVel = obj1.velocity.clone();
-            firstVel.scalarMultiply(obj1.mass);
-            let secondVel = obj2.velocity.clone();
-            secondVel.scalarMultiply(obj2.mass);
-            let leftVect = VERVE.Vector2.add(firstVel, secondVel);
-            let finObj1Vel, finObj2Vel;
-            finVel1.x = (leftSide - obj2.mass * (res) * delV) / (obj1.mass + obj2.mass);
-            finVel2.x = res * delV + finVel1.x;
-            finObj1Vel = leftVect.subtract(relVel.clone().scalarMultiply(obj2.mass * res)).scalarMultiply(1 / (obj1.mass + obj2.mass));
-            finObj2Vel = relVel.clone().scalarMultiply(res).add(finObj1Vel);
-            let dir = VERVE.Vector2.subtract(finObj1Vel, finObj2Vel);
-            let diresign = colliVec.dotProduct(dir);
-            if ((finObj1Vel.x < 0 && finObj2Vel.x < 0) || (finObj1Vel.x > 0 && finObj2Vel.x > 0) || (finObj1Vel.y - finObj2Vel.y) > 0) {
-            }
-            obj1.velocity.set(finObj1Vel.x, finObj1Vel.y);
-            obj2.velocity.set(finObj2Vel.x, finObj2Vel.y);
+            let j = -(1 + res) * (velocityAlongNormal);
+            j = j / (obj1.inverseMass + obj2.inverseMass);
+            let implus = colliVec.scalarMultiply(j);
+            obj1.velocity.subtract(implus.scalarMultiply(obj1.inverseMass));
+            obj2.velocity.add(implus.scalarMultiply(obj2.inverseMass));
         }
         update() {
             for (let o of this._objects) {
@@ -1280,21 +1293,26 @@ var VERVE;
         constructor(pos, vel = new VERVE.Vector2()) {
             this._type = "dynamic";
             this._mass = 1;
-            this._restitution = 0.8;
+            this._restitution = 1;
             this.isLoading = true;
+            this._isCollidable = false;
             this._position = pos;
             this._velocity = vel;
-            this.shape = new VERVE.Circle(this.position, 10);
-            console.log(this._position, "thsids isd isd fsif");
-            let geometry = new VERVE.CircleGeometry(10, 90);
+            this.shape = new VERVE.Circle(this.position, 5);
+            let geometry = new VERVE.CircleGeometry(5, 90);
             let r = Math.floor(Math.random() * 255);
             let g = Math.floor(Math.random() * 255);
             let b = Math.floor(Math.random() * 255);
             let material = new VERVE.BasicMaterial(`rgb(${r}, ${g}, ${b})`);
             this._shapeComponent = new VERVE.ShapeComponent(geometry, material);
+            this.inverseMass = 1 / this.mass;
         }
         get mass() {
             return this._mass;
+        }
+        set mass(value) {
+            this.inverseMass = 1 / value;
+            this._mass = value;
         }
         get restitution() {
             return this._restitution;
@@ -1314,13 +1332,32 @@ var VERVE;
         set position(value) {
             this._position = value;
         }
+        get isCollidable() {
+            return this._isCollidable;
+        }
+        set isCollidable(value) {
+            if (this.shape == undefined) {
+                throw new Error(`Shape of physicsObject is undefined. can not set for collision`);
+            }
+            this._isCollidable = value;
+        }
         getPos() {
             return this._position;
         }
         update() {
-            this._position.add(this._velocity);
-            this._shapeComponent.x = this.position.x;
-            this._shapeComponent.y = this.position.y;
+            if (Math.abs(this._velocity.x) < 0.1) {
+                this._velocity.x = 0;
+            }
+            if (Math.abs(this._velocity.y) < 0.1) {
+                this._velocity.y = 0;
+            }
+            if (this._velocity.x == 0 && this._velocity.y == 0) {
+            }
+            else {
+                this._position.add(this._velocity);
+                this._shapeComponent.x = this.position.x;
+                this._shapeComponent.y = this.position.y;
+            }
             this._shapeComponent.update(23);
         }
         load(gl) {
@@ -1745,8 +1782,8 @@ animateSprite.frameTime = 100;
 let gameObject3 = new VERVE.GameObject();
 gameObject3.x = 320;
 gameObject3.y = 190;
-let physicsObject = new VERVE.PhysicsObject(new VERVE.Vector2(0, 400), new VERVE.Vector2(5, -8));
-let physicsObject2 = new VERVE.PhysicsObject(new VERVE.Vector2(400, 0), new VERVE.Vector2(-5, 4));
+let physicsObject = new VERVE.PhysicsObject(new VERVE.Vector2(400, 200), new VERVE.Vector2(0, 0));
+let physicsObject2 = new VERVE.PhysicsObject(new VERVE.Vector2(0, 200), new VERVE.Vector2(-2, 0));
 gameObject3.addComponent(animateSprite);
 scene.addObject(gameObject3);
 animateSprite.setMouse(physicsObject.shape);
@@ -1754,8 +1791,10 @@ let physicesEngine = new VERVE.PhysicsEngine();
 physicesEngine.addObjects(physicsObject);
 physicesEngine.addObjects(physicsObject2);
 let physics = [];
-for (let i = 0; i < 1000; i++) {
-    let phy = new VERVE.PhysicsObject(new VERVE.Vector2(0, 100), new VERVE.Vector2(Math.random() * 8, Math.random() * 8));
+for (let i = 0; i < 200; i++) {
+    let x = Math.floor(Math.random() * 8) - 4;
+    let y = Math.floor(Math.random() * 8) - 4;
+    let phy = new VERVE.PhysicsObject(new VERVE.Vector2(400, 300), new VERVE.Vector2(x, y));
     physicesEngine.addObjects(phy);
 }
 scene.addObject(physicesEngine);
