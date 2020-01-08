@@ -19,117 +19,42 @@ namespace VERVE {
         }
         private checkCollision():void {
             for(let i=0; i<this._objects.length; i++) {
+                if(!this._objects[i].isCollidable) {
+                    continue;
+                }
                 for(let j=i+1; j<this._objects.length; j++) {
-                    // console.log(this._objects[i].shape);
-                    if(this._objects[i].shape.intersect(this._objects[j].shape)) {
-                        // console.log("colliding");
+                    if(this.num<4) {
+                        console.log(this._objects[i].body.shape)
+                        this.num++;
+                    }
+                    if(!this._objects[j].isCollidable) {
+                        continue;
+                    }   
+                    if(this._objects[i].body.shape.intersect(this._objects[j].body.shape)) {
                         this.checkPostionAfterCollistion(this._objects[i], this._objects[j]);
                     }
                 }
             }
         }
+        private num=0;
         private checkPostionAfterCollistion(obj1:PhysicsObject, obj2:PhysicsObject) {
-            // formula is wrong;    
-            // obj1.position.x -= obj1.velocity.x 
-            // obj2.position.x -= obj2.velocity.x 
-
-            let restituion = Math.max(obj1.restitution, obj2.restitution);
-
-
-            let res:number = 1;
-            // let finVel1 = new Vector2(), finVel2 = new Vector2();
-            // let relVel = Vector2.subtract(obj1.velocity, obj2.velocity);
-
-            // let colliVec = Vector2.subtract(obj2.position, obj1.position);
-            // let dirfirst = relVel.dotProduct(colliVec)
-            // if(dirfirst<0) {
-            //     return;
-            // }
-
-            // let delV = obj2.velocity.x - obj1.velocity.x;
-
-            // let leftSide = obj1.mass*obj1.velocity.x + obj2.mass*obj2.velocity.x;
-            // let firstVel = obj1.velocity.clone();
-            // firstVel.scalarMultiply(obj1.mass)
-            // let secondVel = obj2.velocity.clone();
-            // secondVel.scalarMultiply(obj2.mass);
-            // let leftVect = Vector2.add(firstVel, secondVel); 
-            // // console.log(leftVect, leftSide);
-            // let finObj1Vel:Vector2, finObj2Vel:Vector2;
-            // // console.log(delV, colliVec);
-            // // let equ1 = obj1.mass*finVel1.x + obj2.mass*finVel1.x; // shuold be modified.
-            // finVel1.x = (leftSide - obj2.mass*(res)*delV)/(obj1.mass+obj2.mass);
-            // finVel2.x = res*delV+finVel1.x;
-
-            // // relVelocity.scalarMultiply(obj2.mass*res);
-            // finObj1Vel = leftVect.subtract(relVel.clone().scalarMultiply(obj2.mass*res)).scalarMultiply(1/(obj1.mass+obj2.mass));
-            // finObj2Vel = relVel.clone().scalarMultiply(res).add(finObj1Vel);
-            // console.log(finObj1Vel, finVel1);
-            // console.log(finObj2Vel, finVel2);
-            // finVel1.x *= colliVec.x;
-            // finVel1.y *= colliVec.y;
-            // finVel2.x *= colliVec.x;
-            // finVel2.y *= colliVec.y;
-            // finVel1.multiply(colliVec);
-            // finVel2.multiply(colliVec);
-            // let delVec = new Vector2(delV, 0);
-            // let speed = colliVec.dotProduct(delVec);
-            // console.log(speed, delV);
-            // console.log(speed*colliVec.x, speed*colliVec.y);
-            // console.log(finVel1.x, finVel2.x)
-            // console.log(finVel2.x*colliVec.x, speed*colliVec.y);
-
-            // console.log(finVel1)
-            // obj1.velocity.x = speed*colliVec.x;
-            // obj1.velocity.y = speed*colliVec.y;
-            // obj2.velocity.x -= speed*colliVec.x;
-            // obj2.velocity.y -= speed*colliVec.y;
-            // finVel1.x = finVel1.x*colliVec.x;
-            // finVel1.y = finVel1.y*colliVec.y;
-            // finVel2.x = finVel2.x*colliVec.x;
-            // finVel2.y = finVel2.y*colliVec.y;
-            // let dir = Vector2.subtract(finObj1Vel, finObj2Vel);
             
-            // let diresign = colliVec.dotProduct(dir);
-            // // if(diresign>0) {
-            // //     // console.log("--------------------->",dir);
-            // //     return;
-            // // }
-            // if((finObj1Vel.x<0 && finObj2Vel.x<0) || (finObj1Vel.x>0 && finObj2Vel.x>0) || (finObj1Vel.y - finObj2Vel.y)>0) {
-            //     // console.log("exiting")
-            //     // return;
-            // }
+
+            let res = Math.max(obj1.body.restitution, obj2.body.restitution);
             let relVel = Vector2.subtract(obj2.velocity, obj1.velocity);
-            let unit = relVel.clone();
-            unit.normalize();
-            
-            let normal = new Vector2(0, 1);
-            // normal.y = -Math.sqrt((unit.x*unit.x)/(unit.y+unit.y+unit.x*unit.x));
-            // normal.x = -(normal.y*unit.y)/unit.x
-            let velAlongNormal = relVel.dotProduct(normal);
-            // console.log(normal, unit);
-            let implus = -(1+res)*(velAlongNormal)
-            
-            implus = implus/2;  // since mass is 1;
-            console.log(implus);
-            if(implus==0) {
-                obj1.velocity.scalarMultiply(-1*res);
-                obj2.velocity.scalarMultiply(-1*res);
-
-            } else {
-                
-                obj1.velocity.add(normal.scalarMultiply(implus));
-                obj2.velocity.subtract(normal.scalarMultiply(implus));
+            let colliVec = Vector2.subtract(obj2.position, obj1.position);
+            colliVec.normalize();
+            let velocityAlongNormal = colliVec.dotProduct(relVel)
+            if(velocityAlongNormal>0) {
+                return;
             }
-            // obj1.velocity.set(finObj1Vel.x, finObj1Vel.y);
-            // obj2.velocity.set(finObj2Vel.x, finObj2Vel.y);
+            let j = -(1+res)*(velocityAlongNormal);
+            j = j/(obj1.body.inverseMass+obj2.body.inverseMass);
+            let implus = colliVec.scalarMultiply(j)
             
-            // obj1.velocity.x = finVel2.x;
-            // obj1.velocity.y = finVel1.y;
-            // obj2.velocity.x = finVel1.x;
-            // console.log(finVel1.x);
-            // obj2.velocity.y = finVel2.y;
-            // console.log(obj1.velocity.x, obj2.velocity.x);
+            obj1.velocity.subtract(implus.scalarMultiply(obj1.body.inverseMass));
+            obj2.velocity.add(implus.scalarMultiply(obj2.body.inverseMass));
+
             
         }
         public update():void {

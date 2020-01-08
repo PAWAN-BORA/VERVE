@@ -93,9 +93,16 @@ animateSprite.frameTime = 100;
 let gameObject3 = new VERVE.GameObject();
 gameObject3.x = 320;
 gameObject3.y = 190;
-
-let physicsObject = new VERVE.PhysicsObject(new VERVE.Vector2(0, 200), new VERVE.Vector2(2, 0))
-let physicsObject2 = new VERVE.PhysicsObject(new VERVE.Vector2(400, 200), new VERVE.Vector2(-2, 0))
+let phyPos = new VERVE.Vector2(400, 200);
+let physicsObject = new VERVE.PhysicsObject(phyPos, new VERVE.Vector2(2, 0))
+let shape = new VERVE.Circle(new VERVE.Vector2(0, 0), 50);
+let body = new VERVE.Body(shape, 1.0, 20);
+physicsObject.addBody(body);
+let phy2 = new VERVE.Vector2(100, 210);
+let physicsObject2 = new VERVE.PhysicsObject(phy2, new VERVE.Vector2(-2, 0));
+let body2 = new VERVE.Body(new VERVE.Circle(new VERVE.Vector2(0, 0), 10), 1, 2);
+physicsObject2.addBody(body2);
+// physicsObject2.isCollidable  = true;
 // console.log(physicsObject)
 gameObject3.addComponent(animateSprite);
 scene.addObject(gameObject3);
@@ -105,8 +112,13 @@ let physicesEngine = new VERVE.PhysicsEngine();
 physicesEngine.addObjects(physicsObject)
 physicesEngine.addObjects(physicsObject2)
 let physics:VERVE.PhysicsObject[] = [];
-for(let i=0; i<1000; i++) {
-    // let phy = new VERVE.PhysicsObject(new VERVE.Vector2(0, 100), new VERVE.Vector2(Math.random()*8, Math.random()*8))
+for(let i=0; i<500; i++) {
+    let x = Math.floor(Math.random()*8)-4;
+    let y = Math.floor(Math.random()*8)-4;
+    let pos = new VERVE.Vector2(400, 300);
+    let phy = new VERVE.PhysicsObject(pos, new VERVE.Vector2(x, y));
+    let body = new VERVE.Body(new VERVE.Circle(new VERVE.Vector2(0, 0), 4), 1, 1);
+    phy.addBody(body);
     // physicesEngine.addObjects(phy);
 }
 scene.addObject(physicesEngine);

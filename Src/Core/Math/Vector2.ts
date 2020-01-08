@@ -52,9 +52,20 @@ namespace VERVE {
             this.x *= scalar;
             this.y *= scalar;
             return this;
-            //return new Vector2(this.x*scalar, this.y*scalar) // might be change latter;
+           
+        }
+        public inverse():void {
+            this.x *= -1;
+            this.y *= -1;
+        }
+        public rotate(ang:number) {
+            let x = this.x*Math.cos(ang) - this.y*Math.sin(ang);
+            let y = this.x*Math.sin(ang) + this.y*Math.cos(ang);   
+            this.x = x;
+            this.y = y;
         }
         public magnitude():number {
+            
             return  Math.sqrt(Math.pow((this.x), 2)+Math.pow((this.y), 2));
         }
         public dotProduct(vec:Vector2):number {
@@ -62,6 +73,9 @@ namespace VERVE {
         }
         public normalize():void {
             let magnitude = this.magnitude();
+            if(magnitude===0) {
+                return;
+            }
             this.x = this.x/magnitude;
             this.y = this.y/magnitude;
         }

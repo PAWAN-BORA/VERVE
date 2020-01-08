@@ -384,6 +384,16 @@ var VERVE;
             this.y *= scalar;
             return this;
         }
+        inverse() {
+            this.x *= -1;
+            this.y *= -1;
+        }
+        rotate(ang) {
+            let x = this.x * Math.cos(ang) - this.y * Math.sin(ang);
+            let y = this.x * Math.sin(ang) + this.y * Math.cos(ang);
+            this.x = x;
+            this.y = y;
+        }
         magnitude() {
             return Math.sqrt(Math.pow((this.x), 2) + Math.pow((this.y), 2));
         }
@@ -392,6 +402,9 @@ var VERVE;
         }
         normalize() {
             let magnitude = this.magnitude();
+            if (magnitude === 0) {
+                return;
+            }
             this.x = this.x / magnitude;
             this.y = this.y / magnitude;
         }
@@ -1193,9 +1206,37 @@ var VERVE;
 })(VERVE || (VERVE = {}));
 var VERVE;
 (function (VERVE) {
+    class Body {
+        constructor(shape, restitution, mass) {
+            this.shape = shape;
+            this.restitution = restitution;
+            if (restitution > 1) {
+                console.warn(`restitution should be between 0 and 1: ${restitution}->setting default 1`);
+                this.restitution = 1;
+            }
+            else if (restitution < 0) {
+                console.warn(`restitution should be between 0 and 1: ${restitution}->setting default 1`);
+                this.restitution = 0;
+            }
+            this._mass = mass;
+            this.inverseMass = 1 / mass;
+        }
+        get mass() {
+            return this._mass;
+        }
+        set mass(value) {
+            this._mass = 1 / value;
+            this._mass = value;
+        }
+    }
+    VERVE.Body = Body;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
     class PhysicsEngine {
         constructor() {
             this._objects = [];
+            this.num = 0;
             this.isLoading = true;
         }
         addObjects(object) {
@@ -1212,32 +1253,37 @@ var VERVE;
         }
         checkCollision() {
             for (let i = 0; i < this._objects.length; i++) {
+                if (!this._objects[i].isCollidable) {
+                    continue;
+                }
                 for (let j = i + 1; j < this._objects.length; j++) {
-                    if (this._objects[i].shape.intersect(this._objects[j].shape)) {
+                    if (this.num < 4) {
+                        console.log(this._objects[i].body.shape);
+                        this.num++;
+                    }
+                    if (!this._objects[j].isCollidable) {
+                        continue;
+                    }
+                    if (this._objects[i].body.shape.intersect(this._objects[j].body.shape)) {
                         this.checkPostionAfterCollistion(this._objects[i], this._objects[j]);
                     }
                 }
             }
         }
         checkPostionAfterCollistion(obj1, obj2) {
-            let restituion = Math.max(obj1.restitution, obj2.restitution);
-            let res = 1;
+            let res = Math.max(obj1.body.restitution, obj2.body.restitution);
             let relVel = VERVE.Vector2.subtract(obj2.velocity, obj1.velocity);
-            let unit = relVel.clone();
-            unit.normalize();
-            let normal = new VERVE.Vector2(0, 1);
-            let velAlongNormal = relVel.dotProduct(normal);
-            let implus = -(1 + res) * (velAlongNormal);
-            implus = implus / 2;
-            console.log(implus);
-            if (implus == 0) {
-                obj1.velocity.scalarMultiply(-1 * res);
-                obj2.velocity.scalarMultiply(-1 * res);
+            let colliVec = VERVE.Vector2.subtract(obj2.position, obj1.position);
+            colliVec.normalize();
+            let velocityAlongNormal = colliVec.dotProduct(relVel);
+            if (velocityAlongNormal > 0) {
+                return;
             }
-            else {
-                obj1.velocity.add(normal.scalarMultiply(implus));
-                obj2.velocity.subtract(normal.scalarMultiply(implus));
-            }
+            let j = -(1 + res) * (velocityAlongNormal);
+            j = j / (obj1.body.inverseMass + obj2.body.inverseMass);
+            let implus = colliVec.scalarMultiply(j);
+            obj1.velocity.subtract(implus.scalarMultiply(obj1.body.inverseMass));
+            obj2.velocity.add(implus.scalarMultiply(obj2.body.inverseMass));
         }
         update() {
             for (let o of this._objects) {
@@ -1271,27 +1317,16 @@ var VERVE;
         constructor(pos, vel = new VERVE.Vector2()) {
             this._type = "dynamic";
             this._mass = 1;
-            this._restitution = 0.8;
             this.isLoading = true;
+            this._isCollidable = false;
             this._position = pos;
             this._velocity = vel;
-            this.shape = new VERVE.Circle(this.position, 50);
-            console.log(this._position, "thsids isd isd fsif");
-            let geometry = new VERVE.CircleGeometry(50, 90);
+            let geometry = new VERVE.CircleGeometry(5, 90);
             let r = Math.floor(Math.random() * 255);
             let g = Math.floor(Math.random() * 255);
             let b = Math.floor(Math.random() * 255);
             let material = new VERVE.BasicMaterial(`rgb(${r}, ${g}, ${b})`);
             this._shapeComponent = new VERVE.ShapeComponent(geometry, material);
-        }
-        get mass() {
-            return this._mass;
-        }
-        get restitution() {
-            return this._restitution;
-        }
-        set restitution(value) {
-            this._restitution = value;
         }
         get velocity() {
             return this._velocity;
@@ -1305,13 +1340,47 @@ var VERVE;
         set position(value) {
             this._position = value;
         }
+        get isCollidable() {
+            return this._isCollidable;
+        }
+        set isCollidable(value) {
+            if (this.body == undefined) {
+                throw new Error(`Body of physicsObject is undefined. can not set for collision`);
+            }
+            this._isCollidable = value;
+        }
+        addBody(body) {
+            this.body = body;
+            this.body.shape.position = this._position;
+            let radius;
+            if (this.body.shape instanceof VERVE.Circle) {
+                radius = this.body.shape.radius;
+            }
+            let geometry = new VERVE.CircleGeometry(radius, 90);
+            let r = Math.floor(Math.random() * 255);
+            let g = Math.floor(Math.random() * 255);
+            let b = Math.floor(Math.random() * 255);
+            let material = new VERVE.BasicMaterial(`rgb(${r}, ${g}, ${b})`);
+            this._shapeComponent = new VERVE.ShapeComponent(geometry, material);
+            this._isCollidable = true;
+        }
         getPos() {
             return this._position;
         }
         update() {
-            this._position.add(this._velocity);
-            this._shapeComponent.x = this.position.x;
-            this._shapeComponent.y = this.position.y;
+            if (Math.abs(this._velocity.x) < 0.1) {
+                this._velocity.x = 0;
+            }
+            if (Math.abs(this._velocity.y) < 0.1) {
+                this._velocity.y = 0;
+            }
+            if (this._velocity.x == 0 && this._velocity.y == 0) {
+            }
+            else {
+                this._position.add(this._velocity);
+                this._shapeComponent.x = this.position.x;
+                this._shapeComponent.y = this.position.y;
+            }
             this._shapeComponent.update(23);
         }
         load(gl) {
@@ -1513,6 +1582,7 @@ var VERVE;
             let endTime = performance.now();
             let delta = endTime - this._startTime;
             scene.update(delta);
+            this.showFPS(delta);
             this._startTime = endTime;
         }
         render(scene) {
@@ -1735,8 +1805,15 @@ animateSprite.frameTime = 100;
 let gameObject3 = new VERVE.GameObject();
 gameObject3.x = 320;
 gameObject3.y = 190;
-let physicsObject = new VERVE.PhysicsObject(new VERVE.Vector2(0, 200), new VERVE.Vector2(2, 0));
-let physicsObject2 = new VERVE.PhysicsObject(new VERVE.Vector2(400, 200), new VERVE.Vector2(-2, 0));
+let phyPos = new VERVE.Vector2(400, 200);
+let physicsObject = new VERVE.PhysicsObject(phyPos, new VERVE.Vector2(2, 0));
+let shape = new VERVE.Circle(new VERVE.Vector2(0, 0), 50);
+let body = new VERVE.Body(shape, 1.0, 20);
+physicsObject.addBody(body);
+let phy2 = new VERVE.Vector2(100, 210);
+let physicsObject2 = new VERVE.PhysicsObject(phy2, new VERVE.Vector2(-2, 0));
+let body2 = new VERVE.Body(new VERVE.Circle(new VERVE.Vector2(0, 0), 10), 1, 2);
+physicsObject2.addBody(body2);
 gameObject3.addComponent(animateSprite);
 scene.addObject(gameObject3);
 animateSprite.setMouse(physicsObject.shape);
@@ -1744,7 +1821,13 @@ let physicesEngine = new VERVE.PhysicsEngine();
 physicesEngine.addObjects(physicsObject);
 physicesEngine.addObjects(physicsObject2);
 let physics = [];
-for (let i = 0; i < 1000; i++) {
+for (let i = 0; i < 500; i++) {
+    let x = Math.floor(Math.random() * 8) - 4;
+    let y = Math.floor(Math.random() * 8) - 4;
+    let pos = new VERVE.Vector2(400, 300);
+    let phy = new VERVE.PhysicsObject(pos, new VERVE.Vector2(x, y));
+    let body = new VERVE.Body(new VERVE.Circle(new VERVE.Vector2(0, 0), 4), 1, 1);
+    phy.addBody(body);
 }
 scene.addObject(physicesEngine);
 function start() {
