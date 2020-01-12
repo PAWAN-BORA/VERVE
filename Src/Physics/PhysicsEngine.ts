@@ -23,10 +23,7 @@ namespace VERVE {
                     continue;
                 }
                 for(let j=i+1; j<this._objects.length; j++) {
-                    if(this.num<4) {
-                        console.log(this._objects[i].body.shape)
-                        this.num++;
-                    }
+                   
                     if(!this._objects[j].isCollidable) {
                         continue;
                     }   
@@ -36,10 +33,8 @@ namespace VERVE {
                 }
             }
         }
-        private num=0;
         private checkPostionAfterCollistion(obj1:PhysicsObject, obj2:PhysicsObject) {
             
-
             let res = Math.max(obj1.body.restitution, obj2.body.restitution);
             let relVel = Vector2.subtract(obj2.velocity, obj1.velocity);
             let colliVec = Vector2.subtract(obj2.position, obj1.position);
@@ -51,11 +46,8 @@ namespace VERVE {
             let j = -(1+res)*(velocityAlongNormal);
             j = j/(obj1.body.inverseMass+obj2.body.inverseMass);
             let implus = colliVec.scalarMultiply(j)
-            
-            obj1.velocity.subtract(implus.scalarMultiply(obj1.body.inverseMass));
-            obj2.velocity.add(implus.scalarMultiply(obj2.body.inverseMass));
-
-            
+            obj1.velocity.subtract(implus.clone().scalarMultiply(obj1.body.inverseMass));
+            obj2.velocity.add(implus.clone().scalarMultiply(obj2.body.inverseMass));   
         }
         public update():void {
             for(let o of this._objects){
@@ -64,6 +56,9 @@ namespace VERVE {
                 let pos = o.getPos();
                 if(pos.x>renderer.width || pos.x<0) {
                     o.velocity.x = -o.velocity.x;
+                    if(o.body.shape instanceof Rectangle) {
+                        // console.log(o.body.shape.cornerVecs());
+                    }
                 }
                 if(pos.y>renderer.height || pos.y<0) {
                     o.velocity.y = -o.velocity.y;

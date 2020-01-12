@@ -94,31 +94,31 @@ let gameObject3 = new VERVE.GameObject();
 gameObject3.x = 320;
 gameObject3.y = 190;
 let phyPos = new VERVE.Vector2(400, 200);
-let physicsObject = new VERVE.PhysicsObject(phyPos, new VERVE.Vector2(2, 0))
-let shape = new VERVE.Circle(new VERVE.Vector2(0, 0), 50);
-let body = new VERVE.Body(shape, 1.0, 20);
-physicsObject.addBody(body);
+let physicsObject = new VERVE.PhysicsObject(phyPos, new VERVE.Vector2(0, 0))
+// let shape = new VERVE.Circle(new VERVE.Vector2(0, -20), 30);
+let body = new VERVE.Body("rectangle", {restitution:1.0, density:1});
+physicsObject.addBody(body, { width:100, height:50});
 let phy2 = new VERVE.Vector2(100, 210);
-let physicsObject2 = new VERVE.PhysicsObject(phy2, new VERVE.Vector2(-2, 0));
-let body2 = new VERVE.Body(new VERVE.Circle(new VERVE.Vector2(0, 0), 10), 1, 2);
-physicsObject2.addBody(body2);
+let physicsObject2 = new VERVE.PhysicsObject(phy2, new VERVE.Vector2(-8, 0));
+let body2 = new VERVE.Body("rectangle", {restitution:1.0, density:1});
+physicsObject2.addBody(body2, {radius:20, width:50, height:50});
 // physicsObject2.isCollidable  = true;
 // console.log(physicsObject)
 gameObject3.addComponent(animateSprite);
 scene.addObject(gameObject3);
-animateSprite.setMouse(physicsObject.shape);
+animateSprite.setMouse(physicsObject.body.shape);
 // temp 
 let physicesEngine = new VERVE.PhysicsEngine();
 physicesEngine.addObjects(physicsObject)
-physicesEngine.addObjects(physicsObject2)
+// physicesEngine.addObjects(physicsObject2)
 let physics:VERVE.PhysicsObject[] = [];
-for(let i=0; i<500; i++) {
+for(let i=0; i<100; i++) {
     let x = Math.floor(Math.random()*8)-4;
     let y = Math.floor(Math.random()*8)-4;
     let pos = new VERVE.Vector2(400, 300);
     let phy = new VERVE.PhysicsObject(pos, new VERVE.Vector2(x, y));
-    let body = new VERVE.Body(new VERVE.Circle(new VERVE.Vector2(0, 0), 4), 1, 1);
-    phy.addBody(body);
+    let body = new VERVE.Body("circle", {restitution:1, density:1});
+    phy.addBody(body, {radius:Math.floor(Math.random()*10+1), width:20, height:20});
     // physicesEngine.addObjects(phy);
 }
 scene.addObject(physicesEngine);
@@ -138,12 +138,12 @@ function start() {
     // gameObject2.rotate += 0.02;
     spriteComponent3.rotate += 0.01;
     spriteComponent2.rotate += Math.PI/180*1;
-    physicsObject.update();
-    physicsObject2.update();
+    // physicsObject.update();
+    // physicsObject2.update();
     let pos = physicsObject.getPos();
     let pos2 = physicsObject2.getPos();
-    // gameObject3.x = pos.x;
-    // gameObject3.y = pos.y;
+    gameObject3.x = pos.x;
+    gameObject3.y = pos.y;
     // if(pos.x>renderer.width || pos.x<0) {
     //     // physicsObject.velocity.x = -physicsObject.velocity.x;
     //     if(physicsObject.velocity.x<0) {

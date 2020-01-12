@@ -397,6 +397,9 @@ var VERVE;
         magnitude() {
             return Math.sqrt(Math.pow((this.x), 2) + Math.pow((this.y), 2));
         }
+        magSquare() {
+            return Math.pow((this.x), 2) + Math.pow((this.y), 2);
+        }
         dotProduct(vec) {
             return this.x * vec.x + this.y * vec.y;
         }
@@ -1207,8 +1210,9 @@ var VERVE;
 var VERVE;
 (function (VERVE) {
     class Body {
-        constructor(shape, restitution, mass) {
-            this.shape = shape;
+        constructor(type, { restitution = undefined, density = undefined }) {
+            this.type = type;
+            this.offset = new VERVE.Vector2();
             this.restitution = restitution;
             if (restitution > 1) {
                 console.warn(`restitution should be between 0 and 1: ${restitution}->setting default 1`);
@@ -1218,14 +1222,13 @@ var VERVE;
                 console.warn(`restitution should be between 0 and 1: ${restitution}->setting default 1`);
                 this.restitution = 0;
             }
-            this._mass = mass;
-            this.inverseMass = 1 / mass;
+            this.density = density;
         }
         get mass() {
             return this._mass;
         }
         set mass(value) {
-            this._mass = 1 / value;
+            this.inverseMass = Math.round((1 / value) * 100000) / 100000;
             this._mass = value;
         }
     }
@@ -1236,7 +1239,6 @@ var VERVE;
     class PhysicsEngine {
         constructor() {
             this._objects = [];
-            this.num = 0;
             this.isLoading = true;
         }
         addObjects(object) {
@@ -1257,10 +1259,6 @@ var VERVE;
                     continue;
                 }
                 for (let j = i + 1; j < this._objects.length; j++) {
-                    if (this.num < 4) {
-                        console.log(this._objects[i].body.shape);
-                        this.num++;
-                    }
                     if (!this._objects[j].isCollidable) {
                         continue;
                     }
@@ -1282,8 +1280,8 @@ var VERVE;
             let j = -(1 + res) * (velocityAlongNormal);
             j = j / (obj1.body.inverseMass + obj2.body.inverseMass);
             let implus = colliVec.scalarMultiply(j);
-            obj1.velocity.subtract(implus.scalarMultiply(obj1.body.inverseMass));
-            obj2.velocity.add(implus.scalarMultiply(obj2.body.inverseMass));
+            obj1.velocity.subtract(implus.clone().scalarMultiply(obj1.body.inverseMass));
+            obj2.velocity.add(implus.clone().scalarMultiply(obj2.body.inverseMass));
         }
         update() {
             for (let o of this._objects) {
@@ -1291,6 +1289,8 @@ var VERVE;
                 let pos = o.getPos();
                 if (pos.x > renderer.width || pos.x < 0) {
                     o.velocity.x = -o.velocity.x;
+                    if (o.body.shape instanceof VERVE.Rectangle) {
+                    }
                 }
                 if (pos.y > renderer.height || pos.y < 0) {
                     o.velocity.y = -o.velocity.y;
@@ -1319,6 +1319,7 @@ var VERVE;
             this._mass = 1;
             this.isLoading = true;
             this._isCollidable = false;
+            this.num = 0;
             this._position = pos;
             this._velocity = vel;
             let geometry = new VERVE.CircleGeometry(5, 90);
@@ -1349,14 +1350,31 @@ var VERVE;
             }
             this._isCollidable = value;
         }
-        addBody(body) {
+        addBody(body, { radius = undefined, offset = undefined, width = undefined, height = undefined }) {
             this.body = body;
-            this.body.shape.position = this._position;
-            let radius;
-            if (this.body.shape instanceof VERVE.Circle) {
-                radius = this.body.shape.radius;
+            let geometry;
+            if (body.type == "circle") {
+                if (radius == undefined) {
+                    throw new Error('For circular body radius must be defined');
+                }
+                body.shape = new VERVE.Circle(new VERVE.Vector2(), radius);
+                let area = Math.round(2 * Math.PI * radius) / 1000;
+                body.mass = area * body.density;
+                geometry = new VERVE.CircleGeometry(radius, 20);
             }
-            let geometry = new VERVE.CircleGeometry(radius, 90);
+            else if (body.type == "rectangle") {
+                if (width == undefined || height == undefined) {
+                    throw new Error('For rectangular shape height and width must be defined');
+                }
+                body.shape = new VERVE.Rectangle(new VERVE.Vector2(), width, height);
+                let area = Math.round(width * height) / 1000;
+                body.mass = area * body.density;
+                geometry = new VERVE.PlaneGeometry(width, height);
+            }
+            if (offset != undefined) {
+                body.offset = offset;
+            }
+            console.log(body);
             let r = Math.floor(Math.random() * 255);
             let g = Math.floor(Math.random() * 255);
             let b = Math.floor(Math.random() * 255);
@@ -1377,10 +1395,13 @@ var VERVE;
             if (this._velocity.x == 0 && this._velocity.y == 0) {
             }
             else {
-                this._position.add(this._velocity);
-                this._shapeComponent.x = this.position.x;
-                this._shapeComponent.y = this.position.y;
+                this.position.add(this._velocity);
             }
+            this._shapeComponent.x = this.position.x;
+            this._shapeComponent.y = this.position.y;
+            this._shapeComponent.rotate = this.body.shape.rotation;
+            this.body.shape.position.x = this.body.offset.x + this.position.x;
+            this.body.shape.position.y = this.body.offset.y + this.position.y;
             this._shapeComponent.update(23);
         }
         load(gl) {
@@ -1430,13 +1451,29 @@ var VERVE;
 (function (VERVE) {
     class Rectangle {
         constructor(position, width, height) {
+            this.rotation = 0;
             this.position = position;
             this.width = width;
             this.height = height;
         }
+        cornerVecs() {
+            let vecs = [];
+            let corPos = [
+                { x: 1, y: 1 },
+                { x: 1, y: -1 },
+                { x: -1, y: -1 },
+                { x: -1, y: 1 },
+            ];
+            for (let i = 0; i < 4; i++) {
+                let vec = new VERVE.Vector2(this.position.x + corPos[i].x * this.width / 2, this.position.y + corPos[i].y * this.height / 2);
+                let corner = VERVE.Vector2.subtract(vec, this.position);
+                corner.rotate(this.rotation);
+                corner.add(this.position);
+                vecs[i] = corner;
+            }
+            return vecs;
+        }
         pointInShape(x, y) {
-            let centerX = this.position.x + this.width / 2;
-            let centerY = this.position.y + this.height / 2;
             if (Math.abs(this.position.x - x) < this.width / 2 && Math.abs(this.position.y - y) < this.height / 2) {
                 return true;
             }
@@ -1446,6 +1483,8 @@ var VERVE;
             if (shape instanceof Rectangle) {
                 return this.intesetWithRectangle(shape);
             }
+        }
+        rotate(angle) {
         }
         intesetWithRectangle(rect) {
             let xl = Math.max(this.position.x - this.width / 2, rect.position.x - rect.width / 2);
@@ -1582,7 +1621,6 @@ var VERVE;
             let endTime = performance.now();
             let delta = endTime - this._startTime;
             scene.update(delta);
-            this.showFPS(delta);
             this._startTime = endTime;
         }
         render(scene) {
@@ -1806,28 +1844,26 @@ let gameObject3 = new VERVE.GameObject();
 gameObject3.x = 320;
 gameObject3.y = 190;
 let phyPos = new VERVE.Vector2(400, 200);
-let physicsObject = new VERVE.PhysicsObject(phyPos, new VERVE.Vector2(2, 0));
-let shape = new VERVE.Circle(new VERVE.Vector2(0, 0), 50);
-let body = new VERVE.Body(shape, 1.0, 20);
-physicsObject.addBody(body);
+let physicsObject = new VERVE.PhysicsObject(phyPos, new VERVE.Vector2(0, 0));
+let body = new VERVE.Body("rectangle", { restitution: 1.0, density: 1 });
+physicsObject.addBody(body, { width: 100, height: 50 });
 let phy2 = new VERVE.Vector2(100, 210);
-let physicsObject2 = new VERVE.PhysicsObject(phy2, new VERVE.Vector2(-2, 0));
-let body2 = new VERVE.Body(new VERVE.Circle(new VERVE.Vector2(0, 0), 10), 1, 2);
-physicsObject2.addBody(body2);
+let physicsObject2 = new VERVE.PhysicsObject(phy2, new VERVE.Vector2(-8, 0));
+let body2 = new VERVE.Body("rectangle", { restitution: 1.0, density: 1 });
+physicsObject2.addBody(body2, { radius: 20, width: 50, height: 50 });
 gameObject3.addComponent(animateSprite);
 scene.addObject(gameObject3);
-animateSprite.setMouse(physicsObject.shape);
+animateSprite.setMouse(physicsObject.body.shape);
 let physicesEngine = new VERVE.PhysicsEngine();
 physicesEngine.addObjects(physicsObject);
-physicesEngine.addObjects(physicsObject2);
 let physics = [];
-for (let i = 0; i < 500; i++) {
+for (let i = 0; i < 100; i++) {
     let x = Math.floor(Math.random() * 8) - 4;
     let y = Math.floor(Math.random() * 8) - 4;
     let pos = new VERVE.Vector2(400, 300);
     let phy = new VERVE.PhysicsObject(pos, new VERVE.Vector2(x, y));
-    let body = new VERVE.Body(new VERVE.Circle(new VERVE.Vector2(0, 0), 4), 1, 1);
-    phy.addBody(body);
+    let body = new VERVE.Body("circle", { restitution: 1, density: 1 });
+    phy.addBody(body, { radius: Math.floor(Math.random() * 10 + 1), width: 20, height: 20 });
 }
 scene.addObject(physicesEngine);
 function start() {
@@ -1840,10 +1876,10 @@ function start() {
     ellispeComponent.rotate -= 0.01;
     spriteComponent3.rotate += 0.01;
     spriteComponent2.rotate += Math.PI / 180 * 1;
-    physicsObject.update();
-    physicsObject2.update();
     let pos = physicsObject.getPos();
     let pos2 = physicsObject2.getPos();
+    gameObject3.x = pos.x;
+    gameObject3.y = pos.y;
 }
 VERVE.Color.getColor("rgba(255, 45, 78, 20)");
 window.onload = () => {

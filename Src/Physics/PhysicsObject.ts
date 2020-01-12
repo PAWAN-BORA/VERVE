@@ -1,5 +1,4 @@
 namespace VERVE {
-    
     export class PhysicsObject {
         private _type:"static" | "dynamic" = "dynamic";
         private _velocity: Vector2;
@@ -49,24 +48,40 @@ namespace VERVE {
             this._shapeComponent = new ShapeComponent(geometry, material);
            
         }
-        public addBody(body:Body) {
+        public addBody(body:Body, {radius=undefined, offset=undefined, width=undefined, height=undefined}:{radius?:number, offset?:Vector2, width?:number, height?:number}) {
             this.body = body;
             // temp code;
-           
-            // if(body.type=="circle") {
-            //     console.log(this.position);
-            //     this.body.shape = new Circle(this.position, 10);
-            // }
-            this.body.shape.position = this._position;
-            let radius:number;
-            if(this.body.shape instanceof Circle) {
-                radius = this.body.shape.radius;
+                let geometry;
+            //
+            if(body.type == "circle") {
+                if(radius==undefined) {
+                    throw new Error('For circular body radius must be defined')
+                }
+                body.shape = new Circle(new Vector2(), radius);
+                let area = Math.round(2*Math.PI*radius)/1000;
+                body.mass = area*body.density;
+                //
+                geometry = new CircleGeometry(radius, 20);
+                //
+            } else if(body.type=="rectangle") {
+                if(width==undefined || height==undefined) {
+                    throw new Error('For rectangular shape height and width must be defined')
+                }
+                body.shape = new Rectangle(new Vector2(), width, height);
+                let area = Math.round(width*height)/1000
+                body.mass = area*body.density;
+                geometry = new PlaneGeometry(width, height);
             }
-            let geometry = new CircleGeometry(radius, 90);
+            if(offset!=undefined) {
+                body.offset = offset;
+            }
+            console.log(body)
+            // temp code;
+           
             let r = Math.floor(Math.random()*255);
             let g = Math.floor(Math.random()*255);
             let b = Math.floor(Math.random()*255);
-            let material = new BasicMaterial(`rgb(${r}, ${g}, ${b})`)
+            let material = new BasicMaterial(`rgb(${r}, ${g}, ${b})`);
             this._shapeComponent = new ShapeComponent(geometry, material);
             this._isCollidable = true;
         }
@@ -84,16 +99,18 @@ namespace VERVE {
                 // return;
             } else {
 
-                this._position.add(this._velocity);
-                // this.shape.x = this._position.x;
-                // this.shape.y = this._position.y;
-                this._shapeComponent.x = this.position.x;
-                this._shapeComponent.y = this.position.y;
+                this.position.add(this._velocity);
             }
+            this._shapeComponent.x = this.position.x;
+            this._shapeComponent.y = this.position.y;
+            this._shapeComponent.rotate = this.body.shape.rotation; // temp only in rectangle;
+            this.body.shape.position.x = this.body.offset.x + this.position.x;
+            this.body.shape.position.y = this.body.offset.y + this.position.y;
             this._shapeComponent.update(23);
             
         }
         // temp debug code;
+        public num = 0;
         public load(gl:WebGLRenderingContext) {
             this._shapeComponent.load(gl);
         }

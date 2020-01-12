@@ -68,6 +68,9 @@ namespace VERVE {
             
             return  Math.sqrt(Math.pow((this.x), 2)+Math.pow((this.y), 2));
         }
+        public magSquare():number {
+            return Math.pow((this.x), 2)+Math.pow((this.y), 2);
+        }
         public dotProduct(vec:Vector2):number {
             return this.x*vec.x+this.y*vec.y;
         }
