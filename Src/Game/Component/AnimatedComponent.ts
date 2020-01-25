@@ -58,8 +58,8 @@ namespace VERVE {
             this.getWidthAndHeight();
           
         }
-        public setMouse(shape:IShape):void {
-            this._buttonEvent = new ButtonEvent(shape);
+        public setMouse(physicsObj:PhysicsObject):void {
+            this._buttonEvent = new ButtonEvent(physicsObject);
             MouseManager.addEvent(this._buttonEvent);
         }
 
@@ -123,7 +123,8 @@ namespace VERVE {
             // this._buttonEvent.update();
             if(this._buttonEvent.isClicked) {
                 // do something with mouse event.
-                this._buttonEvent.shape.position.set(this._buttonEvent.getMousePos.x, this._buttonEvent.getMousePos.y);
+                this._buttonEvent.phyObj.position.set(this._buttonEvent.getMousePos.x, this._buttonEvent.getMousePos.y);
+                
             }
             this._localMatrix = this._transform.getTranformationMatrix();
             if(this.startAnimation) {

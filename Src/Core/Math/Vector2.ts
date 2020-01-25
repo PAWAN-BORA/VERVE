@@ -20,6 +20,12 @@ namespace VERVE {
             vec.y = v1.y - v2.y;
             return vec;
         }
+        public static dotProduct(v1:Vector2, v2:Vector2):number {
+            return v1.x*v2.x+v1.y*v2.y;
+        }
+        public static crossProduct(v1:Vector2, v2:Vector2):number {
+            return v1.x*v2.y-v1.y*v2.x;
+        }
         public toArray() {
             return [this.x, this.y];
         }
@@ -74,13 +80,17 @@ namespace VERVE {
         public dotProduct(vec:Vector2):number {
             return this.x*vec.x+this.y*vec.y;
         }
-        public normalize():void {
+        public crossProduct(vec:Vector2):number {
+            return this.x*vec.y-this.y*vec.x;
+        }
+        public normalize():Vector2 {
             let magnitude = this.magnitude();
             if(magnitude===0) {
-                return;
+                return this;
             }
             this.x = this.x/magnitude;
             this.y = this.y/magnitude;
+            return this;
         }
         public clone():Vector2 {
             return new Vector2(this.x, this.y);

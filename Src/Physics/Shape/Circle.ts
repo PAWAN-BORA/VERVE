@@ -3,10 +3,12 @@ namespace VERVE {
     export class Circle implements IShape{
         public position: Vector2;
         public radius:number;
-        
+        public rotation:number;
+        public meterRadius:number;
         constructor(position:Vector2, radius:number) {
             this.position = position;
             this.radius = radius;
+            this.meterRadius = radius/3.8;
         }
         public pointInShape(x: number, y: number): boolean {
             let dis = Math.sqrt(Math.pow((this.position.x-x), 2)+Math.pow((this.position.y-y), 2));

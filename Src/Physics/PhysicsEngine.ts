@@ -27,11 +27,32 @@ namespace VERVE {
                     if(!this._objects[j].isCollidable) {
                         continue;
                     }   
-                    if(this._objects[i].body.shape.intersect(this._objects[j].body.shape)) {
+                    // if(this._objects[i].body.shape.intersect(this._objects[j].body.shape)) {
+                    //     // console.log("colliding")
+                    //     this.checkPositionWithoutAngularMomentum(this._objects[i], this._objects[j]);
+                    // }
+                    if(this._objects[i].body.shape.sat.checkCollision(this._objects[i].body.shape, this._objects[j].body.shape)) {
+                        // console.log("colliding")
                         this.checkPostionAfterCollistion(this._objects[i], this._objects[j]);
+                        // this.checkPositionWithoutAngularMomentum(this._objects[i], this._objects[j]);
                     }
                 }
             }
+        }
+        private checkPositionWithoutAngularMomentum(obj1:PhysicsObject, obj2:PhysicsObject):void {
+            let res = Math.max(obj1.body.restitution, obj2.body.restitution);
+            let relVel = Vector2.subtract(obj2.velocity, obj1.velocity);
+            let colliVec = Vector2.subtract(obj2.position, obj1.position);
+            colliVec.normalize();
+            let velocityAlongNormal = colliVec.dotProduct(relVel);
+            if(velocityAlongNormal>0) {
+                return;
+            }
+            let j = -(1+res)*(velocityAlongNormal);
+            j = j/(obj1.body.inverseMass+obj2.body.inverseMass);
+            let implus = colliVec.clone().scalarMultiply(j)
+            obj1.velocity.subtract(implus.clone().scalarMultiply(obj1.body.inverseMass));
+            obj2.velocity.add(implus.clone().scalarMultiply(obj2.body.inverseMass)); 
         }
         private checkPostionAfterCollistion(obj1:PhysicsObject, obj2:PhysicsObject) {
             
@@ -39,15 +60,28 @@ namespace VERVE {
             let relVel = Vector2.subtract(obj2.velocity, obj1.velocity);
             let colliVec = Vector2.subtract(obj2.position, obj1.position);
             colliVec.normalize();
-            let velocityAlongNormal = colliVec.dotProduct(relVel)
+            let obj1RadiusVec = colliVec.clone().scalarMultiply(obj1.body.shape.meterRadius);
+            let obj2RadiusVec = colliVec.clone().scalarMultiply(obj2.body.shape.meterRadius);
+            let contVec = relVel.clone().normalize();//new Vector2(-colliVec.y, -colliVec.x);
+            let velocityAlongNormal = colliVec.dotProduct(relVel);
             if(velocityAlongNormal>0) {
                 return;
             }
+            let obj1tou = obj1RadiusVec.crossProduct(colliVec);
+            obj1tou = Math.pow(obj1tou, 2)*obj1.body.inverseInertia;
+            let obj2tou = obj2RadiusVec.crossProduct(colliVec);
+            obj2tou = Math.pow(obj2tou, 2)*obj2.body.inverseInertia;
+
             let j = -(1+res)*(velocityAlongNormal);
-            j = j/(obj1.body.inverseMass+obj2.body.inverseMass);
-            let implus = colliVec.scalarMultiply(j)
+            let deno = obj1.body.inverseMass+obj2.body.inverseMass + obj1tou + obj2tou;
+            j = j/deno;
+            let implus = colliVec.clone().scalarMultiply(j)
             obj1.velocity.subtract(implus.clone().scalarMultiply(obj1.body.inverseMass));
+            obj1.angularVelocity -= obj1.body.inverseInertia*Vector2.crossProduct(contVec, implus);
+          
             obj2.velocity.add(implus.clone().scalarMultiply(obj2.body.inverseMass));   
+            obj2.angularVelocity += obj2.body.inverseInertia*Vector2.crossProduct(contVec, implus);
+           
         }
         public update():void {
             for(let o of this._objects){

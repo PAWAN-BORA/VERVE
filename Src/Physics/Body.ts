@@ -10,6 +10,14 @@ namespace VERVE {
         private _mass: number;
         public type:BodyType["type"];
         public offset:Vector2; 
+        private _inertia: number;
+        public get inertia(): number {
+            return this._inertia;
+        }
+        public set inertia(value: number) {
+            this.inverseInertia = Math.round((1/value)*100000)/100000;
+            this._inertia = value;
+        }
         public get mass(): number {
             
             return this._mass;
@@ -19,6 +27,7 @@ namespace VERVE {
             this._mass = value;
         }
         public inverseMass:number;
+        public inverseInertia:number;
         public density:number;
         constructor(type:BodyType["type"], {restitution=undefined, density=undefined}:{restitution:number, density:number}) {
             this.type = type;

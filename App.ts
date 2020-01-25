@@ -94,32 +94,33 @@ let gameObject3 = new VERVE.GameObject();
 gameObject3.x = 320;
 gameObject3.y = 190;
 let phyPos = new VERVE.Vector2(400, 200);
-let physicsObject = new VERVE.PhysicsObject(phyPos, new VERVE.Vector2(0, 0))
+let physicsObject = new VERVE.PhysicsObject(phyPos, new VERVE.Vector2(2, 0))
 // let shape = new VERVE.Circle(new VERVE.Vector2(0, -20), 30);
 let body = new VERVE.Body("rectangle", {restitution:1.0, density:1});
-physicsObject.addBody(body, { width:100, height:50});
-let phy2 = new VERVE.Vector2(100, 210);
-let physicsObject2 = new VERVE.PhysicsObject(phy2, new VERVE.Vector2(-8, 0));
+physicsObject.addBody(body, { width:100, height:50, rotate:0});
+let phy2 = new VERVE.Vector2(200, 210);
+let physicsObject2 = new VERVE.PhysicsObject(phy2, new VERVE.Vector2(-4, 0));
 let body2 = new VERVE.Body("rectangle", {restitution:1.0, density:1});
-physicsObject2.addBody(body2, {radius:20, width:50, height:50});
+physicsObject2.addBody(body2, {radius:20, width:50, height:50, rotate:0});
 // physicsObject2.isCollidable  = true;
 // console.log(physicsObject)
 gameObject3.addComponent(animateSprite);
 scene.addObject(gameObject3);
-animateSprite.setMouse(physicsObject.body.shape);
+console.log(physicsObject.body.shape);
+animateSprite.setMouse(physicsObject);
 // temp 
 let physicesEngine = new VERVE.PhysicsEngine();
-physicesEngine.addObjects(physicsObject)
-// physicesEngine.addObjects(physicsObject2)
+// physicesEngine.addObjects(physicsObject);
+// physicesEngine.addObjects(physicsObject2);
 let physics:VERVE.PhysicsObject[] = [];
-for(let i=0; i<100; i++) {
+for(let i=0; i<25; i++) {
     let x = Math.floor(Math.random()*8)-4;
     let y = Math.floor(Math.random()*8)-4;
     let pos = new VERVE.Vector2(400, 300);
     let phy = new VERVE.PhysicsObject(pos, new VERVE.Vector2(x, y));
-    let body = new VERVE.Body("circle", {restitution:1, density:1});
-    phy.addBody(body, {radius:Math.floor(Math.random()*10+1), width:20, height:20});
-    // physicesEngine.addObjects(phy);
+    let body = new VERVE.Body("rectangle", {restitution:1, density:1});
+    phy.addBody(body, {radius:Math.floor(Math.random()*10+1), width:50, height:50});
+    physicesEngine.addObjects(phy);
 }
 scene.addObject(physicesEngine);
 //
@@ -210,3 +211,10 @@ scene.addObject(gameObject4);
 // };
 // xhttp.open("GET", "Assets/Font/font.fnt");
 // xhttp.send();
+
+// let objv1 = new VERVE.Vector2(-55.3068570209057, 8.13336132660378);
+// let objv2 = new VERVE.Vector2(-9.7883149872989, 1.4394580863674853);
+
+// function getdata(){
+//     console.log(VERVE.Vector2.crossProduct(objv1, objv2));
+// }

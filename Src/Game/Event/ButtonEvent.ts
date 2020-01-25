@@ -1,15 +1,15 @@
 namespace VERVE {
 
     export class ButtonEvent {
-        public shape:IShape;
+        public phyObj:PhysicsObject;
         public isClicked:boolean =false;
         public hover:boolean = false;
         public getMousePos:Vector2 = new Vector2();
-        constructor(shape:IShape) {
-            this.shape = shape;
+        constructor(phyObj:PhysicsObject) {
+            this.phyObj = phyObj;
         }
         public onMousedown(point:Vector2):void {
-            if(this.shape.pointInShape(point.x, point.y)) {
+            if(this.phyObj.body.shape.pointInShape(point.x, point.y)) {
                 // console.log("onMouseDown");
                 this.getMousePos.set(point.x, point.y);
                 this.isClicked = true
@@ -17,7 +17,7 @@ namespace VERVE {
         }
         public onMousemove(point:Vector2):void {
             
-            if(this.shape.pointInShape(point.x, point.y)) {
+            if(this.phyObj.body.shape.pointInShape(point.x, point.y)) {
                 // console.log("onMouseMove");
             }
             if(this.isClicked) {
@@ -27,7 +27,7 @@ namespace VERVE {
             }
         }
         public onMouseup(point:Vector2):void {
-            if(this.shape.pointInShape(point.x, point.y)) {
+            if(this.phyObj.body.shape.pointInShape(point.x, point.y)) {
                 // console.log("onMouseUp");
             }
             this.isClicked = false;
