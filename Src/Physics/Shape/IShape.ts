@@ -6,5 +6,6 @@ namespace VERVE {
         meterRadius:number;
         pointInShape(x:number, y:number):boolean;
         intersect(shape:IShape):boolean;
+       
     }
 }

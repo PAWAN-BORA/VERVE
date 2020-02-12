@@ -15,16 +15,27 @@ namespace VERVE {
             return this._inertia;
         }
         public set inertia(value: number) {
-            this.inverseInertia = Math.round((1/value)*100000)/100000;
-            this._inertia = value;
+            if(value===undefined) {
+                this.inverseInertia = 0;
+                this._inertia = value;
+            } else {
+                this.inverseInertia = Math.round((1/value)*100000)/100000;
+                this._inertia = value;
+            }
         }
         public get mass(): number {
             
             return this._mass;
         }
         public set mass(value: number) {
-            this.inverseMass = Math.round((1/value)*100000)/100000;
-            this._mass = value;
+            if(value == undefined) {
+                this.inverseMass = 0;
+                this._mass = value;
+            } else {
+                this.inverseMass = Math.round((1/value)*100000)/100000;
+                this._mass = value;
+
+            }
         }
         public inverseMass:number;
         public inverseInertia:number;

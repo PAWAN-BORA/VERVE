@@ -6,7 +6,6 @@ namespace VERVE {
         public height:number;
         public rotation:number = 0;
         public meterRadius:number;
-        public sat:SAT;
        
         private cornerPos = [
             {x:1,  y:1},
@@ -20,17 +19,10 @@ namespace VERVE {
             this.height = height;
             this.meterRadius = Math.sqrt(Math.pow(width/2, 2)+Math.pow(height/2, 2))/3.2;
             // console.log(this.radius);
-            this.sat = new SAT();
         }
 
         public cornerVecs():Vector2[] {
             let vecs = [];
-            // let vec = new Vector2(this.position.x+this.width/2, this.position.y-this.height/2);
-            // let corner = Vector2.subtract(this.position, vec);
-            // corner.rotate(this.rotation);
-            // corner.add(this.position)
-            // vecs.push(corner);
-        
             for(let i=0; i<4; i++) {
                 let vec = new Vector2(this.position.x+this.cornerPos[i].x*this.width/2, this.position.y+this.cornerPos[i].y*this.height/2);
                 let corner = Vector2.subtract(vec, this.position);
@@ -43,7 +35,19 @@ namespace VERVE {
             // throw new Error('method not implemented porperly');
 
         }
-
+        /**
+         * @gerDirCorner is the corner of vector with origin rectangle center. 
+         */
+        public getDirCorner(i:number):Vector2 {
+            if(i>4) {
+                throw new Error(`Threr are only 4 corners in a rectangle, so i should be less than 4: ${i}`);
+            }
+            let vec = new Vector2(this.position.x+this.cornerPos[i].x*this.width/2, this.position.y+this.cornerPos[i].y*this.height/2);
+            let corner = Vector2.subtract(this.position, vec);
+            corner.rotate(this.rotation);
+            
+            return corner;
+        }
         public getCorner(i:number):Vector2 {
             if(i>4) {
                 throw new Error(`Threr are only 4 corners in a rectangle, so i should be less than 4: ${i}`);
@@ -99,13 +103,15 @@ namespace VERVE {
         public intersect(shape:IShape):boolean {
             if(shape instanceof Rectangle) {
                 return this.intesetWithRectangle(shape);
+            } else if(shape instanceof Circle) {
+                return this.intersectWithCircle(shape);
             }
         }
         public rotate(angle:number) {
 
         }
         
-        private intesetWithRectangle(rect:Rectangle):boolean {
+        public intesetWithRectangle(rect:Rectangle):boolean {
             let xl = Math.max(this.position.x-this.width/2, rect.position.x-rect.width/2);
             let xr = Math.min(this.position.x+this.width/2, rect.position.x+rect.width/2);
             let yt = Math.max(this.position.y-this.height/2, rect.position.y-rect.height/2);
@@ -115,10 +121,32 @@ namespace VERVE {
             }
             return false;
         }
-        private intersectWithCircle(circle:Circle):boolean {
+        public intersectWithCircle(circle:Circle):boolean {
             
-            return
+            let x:number, y:number;
+            if(circle.position.x<this.position.x-this.width/2) {
+                y = clamp(this.position.y-this.height/2, this.position.y+this.height/2, circle.position.y)
+                x = this.position.x-this.width/2;
+            } else if(circle.position.x>this.position.x+this.width/2) {
+                y = clamp(this.position.y-this.height/2, this.position.y+this.height/2, circle.position.y)
+                x = this.position.x+this.width/2;
+            } else if(circle.position.y<this.position.y-this.height/2) {
+                x = clamp(this.position.x-this.width/2, this.position.x+this.width/2, circle.position.x);
+                y = this.position.y-this.height/2
+            } else if(circle.position.y>this.position.y+this.height/2) {
+                x = clamp(this.position.x-this.width/2, this.position.x+this.width/2, circle.position.x);
+                y = this.position.y+this.height/2
+            } else {
+                return true;
+            }
+            if(dist(x, y, circle.position.x, circle.position.y)<circle.radius) {
+                
+                return true;
+            } else {
+                return false;
+            }
         }
+       
         
     }
 }

@@ -5,6 +5,7 @@ namespace VERVE {
         public radius:number;
         public rotation:number;
         public meterRadius:number;
+       
         constructor(position:Vector2, radius:number) {
             this.position = position;
             this.radius = radius;
@@ -23,9 +24,12 @@ namespace VERVE {
         public intersect(shape: IShape): boolean {
             if(shape instanceof Circle) {
                 return this.intersectWithCircle(shape);
+            } if(shape instanceof Rectangle) {
+               
+                return this.intersectWithRectangle(shape);
             }
         }
-        private intersectWithCircle(shape:Circle):boolean {
+        public intersectWithCircle(shape:Circle):boolean {
             
             let vec = new Vector2(shape.position.x, shape.position.y);
             vec.subtract(this.position);
@@ -35,6 +39,9 @@ namespace VERVE {
             }
             return false;
         }
-
+        public intersectWithRectangle(rect:Rectangle):boolean {
+            
+            return rect.intersectWithCircle(this);
+        }
     }
 }
