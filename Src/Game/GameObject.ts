@@ -47,10 +47,16 @@ namespace VERVE {
                 }
             }
             this.isLoading = false; // should be think about this.
+            this.update(0);  // 0 might be changed. (at startgin seem to be okay.)
         } 
         public addComponent(component:IComponent):void {
             if(component==undefined) {
                 throw new Error(`component is not define`)
+            }
+            let index = this._component.indexOf(component);
+            if(index!==-1){
+                console.warn(`component already exits in the game object: ${component}`);
+                return;
             }
             this._component.push(component);
             component.parent = this;

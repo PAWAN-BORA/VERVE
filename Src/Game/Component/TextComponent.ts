@@ -10,6 +10,9 @@ namespace VERVE {
         private _BitmapFont:BitmapFont;
         private _width:number;
         private _height:number;
+        public onClick = ()=>{};
+        private _shape:IShape;
+        private _clickEvent:ClickEvent;
         public parent: GameObject;
         public isLoading: boolean = true;
         public get x(){
@@ -52,6 +55,48 @@ namespace VERVE {
         }
         public set color(color:string) {
             this._material.color = color;
+        }
+        public setMouse(name:"circle"|"rectangle"|"ellispe", eventManager:EventManager, {radius=undefined, width=undefined, height=undefined, rX=undefined, rY=undefined}):void {
+            
+            if(name==="circle") {
+                if(radius==undefined) {
+                    throw new Error("for circular shape radius must be defined");
+                }
+                this._shape = new Circle(new Vector2(this.x+this.parent.x, this.y+this.parent.y), radius); 
+                this._clickEvent = new ClickEvent(this._shape);
+                this._clickEvent.parent = this;
+                eventManager.addEvent(this._clickEvent);
+
+            } else if(name==="rectangle") {
+                if(width==undefined) {
+                    throw new Error("for retangular shape width must be defined");
+                } else if(height===undefined) {
+                    throw new Error("for rectangular shape height must be defined");
+                }
+                this._shape = new Rectangle(new Vector2(this.x+this.parent.x, this.y+this.parent.y), width, height); 
+                this._clickEvent = new ClickEvent(this._shape);
+                this._clickEvent.parent = this;
+                eventManager.addEvent(this._clickEvent);
+
+            } else if(name==="ellispe") {
+                // if(rX==undefined) {
+                //     throw new Error("for elliptical shape rX(major axis) must be defined");
+                // } else if(rY==undefined) {
+                //     throw new Error("for elliptical shape rY(minor axis) must be defined");
+                // }
+                // let shape = new Ellispse(new Vector2(this.x, this.y), rX, rY); 
+                // let clickEvent = new ClickEvent(shape);
+                // clickEvent.parent = this;
+            } else {
+                throw new Error("The shape must be cirlce or rectangle but you define: "+name);
+            }
+          
+        }
+        public enableMouse(eventManager:EventManager):void {
+            eventManager.addEvent(this._clickEvent)
+        }
+        public disableMouse(eventManager:EventManager):void {
+            eventManager.removeEvent(this._clickEvent);
         }
         public changeText(text:string):void {
             this._text = text;
@@ -139,6 +184,7 @@ namespace VERVE {
             if(this._material instanceof TextureMaterial) {
                 this._material.loadTexture();
             }
+           
         }
         public update(delta: number): void {
             // this.loadTextData();

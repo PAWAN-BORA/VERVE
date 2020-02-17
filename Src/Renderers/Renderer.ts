@@ -68,6 +68,7 @@ namespace VERVE {
             this._startTime = endTime;
         }
         public render(scene:Scene):void {
+
             // this.gl.colorMask(false, false, false, true);
             this.gl.clearColor(0, 1, 1, 1);
             this.gl.clear(this.gl.COLOR_BUFFER_BIT || this.gl.DEPTH_BUFFER_BIT); 

@@ -16,9 +16,13 @@ namespace VERVE {
         public isLoading: boolean = true;
         public startAnimation:boolean = false;
         private _totalTime:number = 0;
+        public onClick = ()=>{};
+        public isMouseEnable = false;
+        private _shape:IShape;
+        private _clickEvent:ClickEvent;
        // temp might  be change later;
-        private _physicsObject:PhysicsObject;
-        private _buttonEvent:ButtonEvent;
+        // private _physicsObject:PhysicsObject;
+        // private _buttonEvent:ButtonEvent;
         //
         public get buffer(): TextureBuffer {
             return this._buffer;
@@ -58,11 +62,49 @@ namespace VERVE {
             this.getWidthAndHeight();
           
         }
-        public setMouse(physicsObj:PhysicsObject):void {
-            this._buttonEvent = new ButtonEvent(physicsObject);
-            MouseManager.addEvent(this._buttonEvent);
-        }
+        public setMouse(name:"circle"|"rectangle"|"ellispe", eventManager:EventManager, {radius=undefined, width=undefined, height=undefined, rX=undefined, rY=undefined}):void {
+            
+            if(name==="circle") {
+                if(radius==undefined) {
+                    throw new Error("for circular shape radius must be defined");
+                }
+                this._shape = new Circle(new Vector2(this.x+this.parent.x, this.y+this.parent.y), radius); 
+                this._clickEvent = new ClickEvent(this._shape);
+                this._clickEvent.parent = this;
+                eventManager.addEvent(this._clickEvent);
 
+            } else if(name==="rectangle") {
+                if(width==undefined) {
+                    throw new Error("for retangular shape width must be defined");
+                } else if(height===undefined) {
+                    throw new Error("for rectangular shape height must be defined");
+                }
+                this._shape = new Rectangle(new Vector2(this.x+this.parent.x, this.y+this.parent.y), width, height); 
+                this._clickEvent = new ClickEvent(this._shape);
+                this._clickEvent.parent = this;
+                eventManager.addEvent(this._clickEvent);
+
+            } else if(name==="ellispe") {
+                // if(rX==undefined) {
+                //     throw new Error("for elliptical shape rX(major axis) must be defined");
+                // } else if(rY==undefined) {
+                //     throw new Error("for elliptical shape rY(minor axis) must be defined");
+                // }
+                // let shape = new Ellispse(new Vector2(this.x, this.y), rX, rY); 
+                // let clickEvent = new ClickEvent(shape);
+                // clickEvent.parent = this;
+            } else {
+                throw new Error("The shape must be cirlce or rectangle but you define: "+name);
+            }
+          this.isMouseEnable = true;
+        //   this._shape.load(renderer.gl);
+        }
+        public enableMouse(eventManager:EventManager):void {
+            eventManager.addEvent(this._clickEvent)
+        }
+        public disableMouse(eventManager:EventManager):void {
+            eventManager.removeEvent(this._clickEvent);
+        }
         private getWidthAndHeight():void {
             this._frameWidth = 1/this._column;
             this._frameHeight = 1/this._row;
@@ -96,6 +138,7 @@ namespace VERVE {
                 this._material.loadTexture();
             }
             this._material.texture.active();
+         
         }
         private changeFrame(x:number, y:number):void {
             let data = [
@@ -121,11 +164,12 @@ namespace VERVE {
             // this._transform.position.x = pos.x;
             // this._transform.position.y = pos.y;
             // this._buttonEvent.update();
-            if(this._buttonEvent.isClicked) {
-                // do something with mouse event.
-                this._buttonEvent.phyObj.position.set(this._buttonEvent.getMousePos.x, this._buttonEvent.getMousePos.y);
+            // if(this._buttonEvent.isClicked) {
+            //     // do something with mouse event.
+            //     this._buttonEvent.phyObj.position.set(this._buttonEvent.getMousePos.x, this._buttonEvent.getMousePos.y);
                 
-            }
+                
+            // }
             this._localMatrix = this._transform.getTranformationMatrix();
             if(this.startAnimation) {
                 this._totalTime += delta;
@@ -141,8 +185,10 @@ namespace VERVE {
                 }
                 
             }
-            // if()
-            // this._transform.position.x++
+        //   if(this.isMouseEnable) {
+        //     // this._shape.position.set(this.parent.x+this.x, this.parent.y+this.y) ;
+        //     // console.log("sdf")
+        //   }
         }
         public render(render: Renderer): void {
             let model = Matrix4X4.multiply(this.parent.worldMatrix, this._localMatrix)
@@ -152,6 +198,10 @@ namespace VERVE {
             this._material.texture.active();
             this._buffer.bind();
             this._buffer.draw();
+            
+            // degub
+            // this._shape.render(render);
+
         }
         
     }

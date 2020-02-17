@@ -1,11 +1,4 @@
-/// <reference path="Src/Game/Scene.ts"/>
-/// <reference path="Src/Game/Component/SpriteComponent.ts"/>
-/// <reference path="Src/Game/Component/AnimatedComponent.ts"/>
-/// <reference path="Src/Game/Component/ShapeComponent.ts"/>
-/// <reference path="Src/Core/Geometry/PlaneGeometry.ts"/>
-/// <reference path="Src/Core/Geometry/CircleGeometry.ts"/>
-/// <reference path="Src/Core/Geometry/EllipseGeometry.ts"/>
-/// <reference path="Src/Core/Color/Color.ts"/>
+
 let imageForTexture = new Image();
 imageForTexture.src = `Assets/Textures/star2.png`;
 let spriteImage = new Image();
@@ -59,7 +52,7 @@ scene2.addObject(gameObject)
 // scene.addObject(spriteComponent2);
 // scene2.addObject(spriteComponent2);
 // ellispeComponent.rotate = Math.PI/2;
-let updating = true;
+let updating = false;
 material.color = "rgba(255, 255, 0, 40)";
 let animateMaterial = new VERVE.TextureMaterial(spriteImage);
 let animateSprite = new VERVE.AnimatedComponent(108, 140, 2, 8, animateMaterial);
@@ -107,7 +100,13 @@ physicsObject2.addBody(body2, {radius:40, width:50, height:50, rotate:0});
 gameObject3.addComponent(animateSprite);
 scene.addObject(gameObject3);
 console.log(physicsObject.body.shape);
-animateSprite.setMouse(physicsObject);
+let eventManager = new VERVE.EventManager();
+VERVE.MouseManager.setEventManger(eventManager);
+// animateSprite.setMouse("circle", eventManager, {radius:50, width:100, height:80});
+animateSprite.onClick = ()=>{
+    console.log("clicked on sprite componetn")
+}
+// spriteComponent.setMouse("circle", eventManager, {radius:50, width:100, height:80});
 // temp 
 let physicesEngine = new VERVE.PhysicsEngine();
 // physicesEngine.addObjects(physicsObject);
@@ -121,8 +120,8 @@ for(let i=0; i<600; i++) {
     let pos = new VERVE.Vector2(randomInt(0, 800), randomInt(0, 600));
     let phy = new VERVE.PhysicsObject(pos, new VERVE.Vector2(x, y), phyType[randomInt(0, 1)]);
     let body = new VERVE.Body(types[randomInt(0, 1)], {restitution:1, density:1});
-    phy.addBody(body, {radius:randomInt(5, 10), width:randomInt(10, 20), height:randomInt(10, 20)});
-    physicesEngine.addObjects(phy);
+    // phy.addBody(body, {radius:randomInt(5, 10), width:randomInt(10, 20), height:randomInt(10, 20)});
+    // physicesEngine.addObjects(phy);
 }
 // scene.addObject(physicesEngine);
 //
@@ -132,9 +131,10 @@ function start() {
     
     requestAnimationFrame(start);
 
-    physicesEngine.update();
-    if(updating)
-    renderer.update();
+    if(updating) {
+        renderer.update();
+        physicesEngine.update();
+    }
     // renderer2.render(scene);
     renderer.render(scene);
     physicesEngine.render(renderer);

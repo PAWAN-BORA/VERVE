@@ -146,7 +146,20 @@ namespace VERVE {
                 return false;
             }
         }
-       
-        
+       //degub
+        private _shapeComponent:ShapeComponent;
+        public load(gl:WebGL2RenderingContext):void {
+            let material = new BasicMaterial("#000000");
+            let geometry= new PlaneGeometry(this.width, this.height);
+            this._shapeComponent = new ShapeComponent(geometry, material);
+            this._shapeComponent.load(gl);
+            this._shapeComponent.update(0);
+        }
+        public render(render:Renderer):void {
+            this._shapeComponent.x = this.position.x;
+            this._shapeComponent.y = this.position.y;
+            this._shapeComponent.update(10);
+            this._shapeComponent.render(render);
+        }
     }
 }

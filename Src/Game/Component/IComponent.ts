@@ -5,5 +5,6 @@ namespace VERVE {
         load(gl:WebGLRenderingContext):void;
         update(delta:number):void;
         render(render:Renderer):void;
+        onClick:Function;
     }
 }

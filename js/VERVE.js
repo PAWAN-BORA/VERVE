@@ -502,64 +502,107 @@ var VERVE;
 var VERVE;
 (function (VERVE) {
     class MouseManager {
-        static addEvent(MouseEvent) {
-            this._buttonEvent.push(MouseEvent);
-        }
-        static removeEvent(MouseEvent) {
-            let index = this._buttonEvent.indexOf(MouseEvent);
-            if (index !== -1) {
-                this._buttonEvent.splice(index, 1);
-            }
+        static setEventManger(eventManager) {
+            MouseManager.eventManager = eventManager;
         }
         static initialise(renderer) {
             MouseManager._cvs = renderer.canvas;
-            MouseManager._width = renderer.width;
-            MouseManager._height = renderer.height;
             MouseManager._cvs.addEventListener("mousedown", MouseManager.mousedown);
             MouseManager._cvs.addEventListener("mousemove", MouseManager.mousemove);
             MouseManager._cvs.addEventListener("mouseup", MouseManager.mouseup);
         }
         static getPoints(event) {
             let rect = MouseManager._cvs.getBoundingClientRect();
-            let ratioX = MouseManager._width / MouseManager._cvs.width;
-            let ratioY = MouseManager._height / MouseManager._cvs.height;
+            let ratioX = MouseManager._cvs.width / rect.width;
+            let ratioY = MouseManager._cvs.height / rect.height;
             let x = (event.x - rect.left) * ratioX;
             let y = (event.y - rect.top) * ratioY;
-            this._mousePos.set(x, y);
+            MouseManager._mousePos.set(x, y);
         }
         static mousedown(event) {
             MouseManager.getPoints(event);
-            for (let i of MouseManager._buttonEvent) {
-                i.onMousedown(MouseManager._mousePos);
-            }
+            MouseManager.eventManager.onMousedown(MouseManager._mousePos);
         }
         static mousemove(event) {
             MouseManager.getPoints(event);
-            for (let i of MouseManager._buttonEvent) {
-                i.onMousemove(MouseManager._mousePos);
-            }
+            MouseManager.eventManager.onMouseMove(MouseManager._mousePos);
         }
         static mouseup(event) {
             MouseManager.getPoints(event);
-            for (let i of MouseManager._buttonEvent) {
-                i.onMouseup(MouseManager._mousePos);
-            }
+            MouseManager.eventManager.onMouseUp(MouseManager._mousePos);
         }
     }
-    MouseManager._buttonEvent = [];
     MouseManager._mousePos = new VERVE.Vector2();
     VERVE.MouseManager = MouseManager;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class TouchManager {
+        static setEventManger(eventManager) {
+            TouchManager.eventManager = eventManager;
+        }
+        static initialise(renderer) {
+            TouchManager._cvs = renderer.canvas;
+            TouchManager._cvs.addEventListener("touchstart", TouchManager.touchstart);
+            TouchManager._cvs.addEventListener("touchmove", TouchManager.tocuhmove);
+            TouchManager._cvs.addEventListener("toucend", TouchManager.touchend);
+        }
+        static getPoints(event) {
+            let rect = TouchManager._cvs.getBoundingClientRect();
+            let ratioX = TouchManager._cvs.width / rect.width;
+            let ratioY = TouchManager._cvs.height / rect.height;
+            let x = (event.touches[0].clientX - rect.left) * ratioX;
+            let y = (event.touches[0].clientY - rect.top) * ratioY;
+            TouchManager._mousePos.set(x, y);
+        }
+        static touchstart(event) {
+            TouchManager.getPoints(event);
+            TouchManager.eventManager.onMousedown(TouchManager._mousePos);
+        }
+        static tocuhmove(event) {
+            TouchManager.getPoints(event);
+            TouchManager.eventManager.onMouseMove(TouchManager._mousePos);
+        }
+        static touchend(event) {
+            let rect = TouchManager._cvs.getBoundingClientRect();
+            let ratioX = TouchManager._cvs.width / rect.width;
+            let ratioY = TouchManager._cvs.height / rect.height;
+            let x = (event.changedTouches[0].clientX - rect.left) * ratioX;
+            let y = (event.changedTouches[0].clientY - rect.top) * ratioY;
+            TouchManager._mousePos.set(x, y);
+            TouchManager.eventManager.onMouseUp(TouchManager._mousePos);
+        }
+    }
+    TouchManager._mousePos = new VERVE.Vector2();
+    VERVE.TouchManager = TouchManager;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class AudioLoader {
+        constructor() {
+        }
+        static load(path, name, fun = () => { }) {
+            let audio = new Audio();
+            audio.onloadeddata = () => {
+                AudioLoader.sounds[name] = new VERVE.Sound(audio);
+                fun();
+            };
+            audio.src = path;
+        }
+    }
+    AudioLoader.sounds = {};
+    VERVE.AudioLoader = AudioLoader;
 })(VERVE || (VERVE = {}));
 var VERVE;
 (function (VERVE) {
     class FontLoader {
         constructor() {
         }
-        static load(path, name, fun) {
+        static load(path, name, fun = () => { }) {
             let request = new XMLHttpRequest();
             request.onreadystatechange = () => {
                 if (request.readyState == 4 && request.status === 200) {
-                    content = request.responseText;
+                    let content = request.responseText;
                     let bitmapFont = new VERVE.BitmapFont(content, path, fun);
                     bitmapFont.name = name;
                     FontLoader.bitmapFont[name] = bitmapFont;
@@ -574,10 +617,42 @@ var VERVE;
 })(VERVE || (VERVE = {}));
 var VERVE;
 (function (VERVE) {
-    class TextureLoader {
-        constructor(path, fun) {
+    class Sound {
+        constructor(audio) {
+            this._audio = audio;
+        }
+        play() {
+            this.stop();
+            this._audio.play();
+        }
+        stop() {
+            this.pause();
+            this._audio.currentTime = 0;
+        }
+        pause() {
+            this._audio.pause();
         }
     }
+    VERVE.Sound = Sound;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class TextureLoader {
+        constructor() {
+        }
+        static load(path, name, fun = () => { }) {
+            let image = new Image();
+            image.onload = () => {
+                TextureLoader.image[name] = image;
+                fun();
+            };
+            image.onerror = () => {
+                throw new Error('Error in loading image: ' + name);
+            };
+            image.src = path;
+        }
+    }
+    TextureLoader.image = {};
     VERVE.TextureLoader = TextureLoader;
 })(VERVE || (VERVE = {}));
 var VERVE;
@@ -806,10 +881,16 @@ var VERVE;
                 }
             }
             this.isLoading = false;
+            this.update(0);
         }
         addComponent(component) {
             if (component == undefined) {
                 throw new Error(`component is not define`);
+            }
+            let index = this._component.indexOf(component);
+            if (index !== -1) {
+                console.warn(`component already exits in the game object: ${component}`);
+                return;
             }
             this._component.push(component);
             component.parent = this;
@@ -854,7 +935,18 @@ var VERVE;
             if (gameObject == undefined) {
                 throw new Error(`game object is not define`);
             }
+            let index = this._gameObjects.indexOf(gameObject);
+            if (index !== -1) {
+                console.warn(`game object already exits in the scene: ${gameObject}`);
+                return;
+            }
             this._gameObjects.push(gameObject);
+        }
+        removeObject(gameObject) {
+            let index = this._gameObjects.indexOf(gameObject);
+            if (index !== -1) {
+                this._gameObjects.splice(index, 1);
+            }
         }
         update(delta) {
             for (let g of this._gameObjects) {
@@ -878,6 +970,8 @@ var VERVE;
             this.isLoading = true;
             this.startAnimation = false;
             this._totalTime = 0;
+            this.onClick = () => { };
+            this.isMouseEnable = false;
             this._num = 0;
             this._geometry = new VERVE.PlaneGeometry(width, height);
             this._material = material;
@@ -914,9 +1008,40 @@ var VERVE;
             this._transform.scale.x = x;
             this._transform.scale.y = y;
         }
-        setMouse(physicsObj) {
-            this._buttonEvent = new VERVE.ButtonEvent(physicsObject);
-            VERVE.MouseManager.addEvent(this._buttonEvent);
+        setMouse(name, eventManager, { radius = undefined, width = undefined, height = undefined, rX = undefined, rY = undefined }) {
+            if (name === "circle") {
+                if (radius == undefined) {
+                    throw new Error("for circular shape radius must be defined");
+                }
+                this._shape = new VERVE.Circle(new VERVE.Vector2(this.x + this.parent.x, this.y + this.parent.y), radius);
+                this._clickEvent = new VERVE.ClickEvent(this._shape);
+                this._clickEvent.parent = this;
+                eventManager.addEvent(this._clickEvent);
+            }
+            else if (name === "rectangle") {
+                if (width == undefined) {
+                    throw new Error("for retangular shape width must be defined");
+                }
+                else if (height === undefined) {
+                    throw new Error("for rectangular shape height must be defined");
+                }
+                this._shape = new VERVE.Rectangle(new VERVE.Vector2(this.x + this.parent.x, this.y + this.parent.y), width, height);
+                this._clickEvent = new VERVE.ClickEvent(this._shape);
+                this._clickEvent.parent = this;
+                eventManager.addEvent(this._clickEvent);
+            }
+            else if (name === "ellispe") {
+            }
+            else {
+                throw new Error("The shape must be cirlce or rectangle but you define: " + name);
+            }
+            this.isMouseEnable = true;
+        }
+        enableMouse(eventManager) {
+            eventManager.addEvent(this._clickEvent);
+        }
+        disableMouse(eventManager) {
+            eventManager.removeEvent(this._clickEvent);
         }
         getWidthAndHeight() {
             this._frameWidth = 1 / this._column;
@@ -960,9 +1085,6 @@ var VERVE;
             }
         }
         update(delta) {
-            if (this._buttonEvent.isClicked) {
-                this._buttonEvent.phyObj.position.set(this._buttonEvent.getMousePos.x, this._buttonEvent.getMousePos.y);
-            }
             this._localMatrix = this._transform.getTranformationMatrix();
             if (this.startAnimation) {
                 this._totalTime += delta;
@@ -993,6 +1115,7 @@ var VERVE;
 (function (VERVE) {
     class ShapeComponent {
         constructor(geometry, material) {
+            this.onClick = () => { };
             this.isLoading = true;
             this._geometry = geometry;
             this._material = material;
@@ -1019,6 +1142,40 @@ var VERVE;
         scale(x, y) {
             this._transform.scale.x = x;
             this._transform.scale.y = y;
+        }
+        setMouse(name, eventManager, { radius = undefined, width = undefined, height = undefined, rX = undefined, rY = undefined }) {
+            if (name === "circle") {
+                if (radius == undefined) {
+                    throw new Error("for circular shape radius must be defined");
+                }
+                this._shape = new VERVE.Circle(new VERVE.Vector2(this.x + this.parent.x, this.y + this.parent.y), radius);
+                this._clickEvent = new VERVE.ClickEvent(this._shape);
+                this._clickEvent.parent = this;
+                eventManager.addEvent(this._clickEvent);
+            }
+            else if (name === "rectangle") {
+                if (width == undefined) {
+                    throw new Error("for retangular shape width must be defined");
+                }
+                else if (height === undefined) {
+                    throw new Error("for rectangular shape height must be defined");
+                }
+                this._shape = new VERVE.Rectangle(new VERVE.Vector2(this.x + this.parent.x, this.y + this.parent.y), width, height);
+                this._clickEvent = new VERVE.ClickEvent(this._shape);
+                this._clickEvent.parent = this;
+                eventManager.addEvent(this._clickEvent);
+            }
+            else if (name === "ellispe") {
+            }
+            else {
+                throw new Error("The shape must be cirlce or rectangle but you define: " + name);
+            }
+        }
+        enableMouse(eventManager) {
+            eventManager.addEvent(this._clickEvent);
+        }
+        disableMouse(eventManager) {
+            eventManager.removeEvent(this._clickEvent);
         }
         load(gl) {
             this._buffer = new VERVE.Buffer(gl);
@@ -1051,6 +1208,7 @@ var VERVE;
 (function (VERVE) {
     class SpriteComponent {
         constructor(geometry, material) {
+            this.onClick = () => { };
             this.isLoading = true;
             this._geometry = geometry;
             this._material = material;
@@ -1084,6 +1242,40 @@ var VERVE;
             this._transform.scale.x = x;
             this._transform.scale.y = y;
         }
+        setMouse(name, eventManager, { radius = undefined, width = undefined, height = undefined, rX = undefined, rY = undefined }) {
+            if (name === "circle") {
+                if (radius == undefined) {
+                    throw new Error("for circular shape radius must be defined");
+                }
+                this._shape = new VERVE.Circle(new VERVE.Vector2(this.x + this.parent.x, this.y + this.parent.y), radius);
+                this._clickEvent = new VERVE.ClickEvent(this._shape);
+                this._clickEvent.parent = this;
+                eventManager.addEvent(this._clickEvent);
+            }
+            else if (name === "rectangle") {
+                if (width == undefined) {
+                    throw new Error("for retangular shape width must be defined");
+                }
+                else if (height === undefined) {
+                    throw new Error("for rectangular shape height must be defined");
+                }
+                this._shape = new VERVE.Rectangle(new VERVE.Vector2(this.x + this.parent.x, this.y + this.parent.y), width, height);
+                this._clickEvent = new VERVE.ClickEvent(this._shape);
+                this._clickEvent.parent = this;
+                eventManager.addEvent(this._clickEvent);
+            }
+            else if (name === "ellispe") {
+            }
+            else {
+                throw new Error("The shape must be cirlce or rectangle but you define: " + name);
+            }
+        }
+        enableMouse(eventManager) {
+            eventManager.addEvent(this._clickEvent);
+        }
+        disableMouse(eventManager) {
+            eventManager.removeEvent(this._clickEvent);
+        }
         load(gl) {
             this._buffer = new VERVE.TextureBuffer(gl);
             this._buffer.loadData(this._geometry.data, this._geometry.indices);
@@ -1112,6 +1304,7 @@ var VERVE;
 (function (VERVE) {
     class TextComponent {
         constructor(text, fontName) {
+            this.onClick = () => { };
             this.isLoading = true;
             this._text = text;
             this._transform = new VERVE.Transform();
@@ -1151,6 +1344,40 @@ var VERVE;
         }
         set color(color) {
             this._material.color = color;
+        }
+        setMouse(name, eventManager, { radius = undefined, width = undefined, height = undefined, rX = undefined, rY = undefined }) {
+            if (name === "circle") {
+                if (radius == undefined) {
+                    throw new Error("for circular shape radius must be defined");
+                }
+                this._shape = new VERVE.Circle(new VERVE.Vector2(this.x + this.parent.x, this.y + this.parent.y), radius);
+                this._clickEvent = new VERVE.ClickEvent(this._shape);
+                this._clickEvent.parent = this;
+                eventManager.addEvent(this._clickEvent);
+            }
+            else if (name === "rectangle") {
+                if (width == undefined) {
+                    throw new Error("for retangular shape width must be defined");
+                }
+                else if (height === undefined) {
+                    throw new Error("for rectangular shape height must be defined");
+                }
+                this._shape = new VERVE.Rectangle(new VERVE.Vector2(this.x + this.parent.x, this.y + this.parent.y), width, height);
+                this._clickEvent = new VERVE.ClickEvent(this._shape);
+                this._clickEvent.parent = this;
+                eventManager.addEvent(this._clickEvent);
+            }
+            else if (name === "ellispe") {
+            }
+            else {
+                throw new Error("The shape must be cirlce or rectangle but you define: " + name);
+            }
+        }
+        enableMouse(eventManager) {
+            eventManager.addEvent(this._clickEvent);
+        }
+        disableMouse(eventManager) {
+            eventManager.removeEvent(this._clickEvent);
         }
         changeText(text) {
             this._text = text;
@@ -1256,38 +1483,89 @@ var VERVE;
 })(VERVE || (VERVE = {}));
 var VERVE;
 (function (VERVE) {
-    class ButtonEvent {
-        constructor(phyObj) {
+    class ClickEvent {
+        constructor(shape) {
             this.isClicked = false;
             this.hover = false;
             this.getMousePos = new VERVE.Vector2();
-            this.phyObj = phyObj;
+            this.shape = shape;
         }
         onMousedown(point) {
-            if (this.phyObj.body.shape.pointInShape(point.x, point.y)) {
-                this.getMousePos.set(point.x, point.y);
+            if (this.shape.pointInShape(point.x, point.y)) {
                 this.isClicked = true;
             }
         }
         onMousemove(point) {
-            if (this.phyObj.body.shape.pointInShape(point.x, point.y)) {
-            }
             if (this.isClicked) {
-                this.getMousePos.set(point.x, point.y);
+            }
+            if (this.shape.pointInShape(point.x, point.y)) {
+                this.hover = true;
+            }
+            else {
+                this.hover = false;
+            }
+            if (this.hover) {
+                renderer.canvas.style.cursor = "pointer";
+            }
+            else {
+                renderer.canvas.style.cursor = "auto";
             }
         }
         onMouseup(point) {
-            if (this.phyObj.body.shape.pointInShape(point.x, point.y)) {
+            if (this.shape.pointInShape(point.x, point.y)) {
+            }
+            if (this.isClicked) {
+                this.parent.onClick();
             }
             this.isClicked = false;
         }
         update() {
         }
-        load() {
-            VERVE.MouseManager.addEvent(this);
+        render() {
         }
     }
-    VERVE.ButtonEvent = ButtonEvent;
+    VERVE.ClickEvent = ClickEvent;
+})(VERVE || (VERVE = {}));
+var VERVE;
+(function (VERVE) {
+    class EventManager {
+        constructor() {
+            this.clickEvents = [];
+        }
+        addEvent(clickEvent) {
+            let index = this.clickEvents.indexOf(clickEvent);
+            if (index !== -1) {
+                console.warn("button is already exits: " + clickEvent);
+                return;
+            }
+            this.clickEvents.push(clickEvent);
+        }
+        removeEvent(clickEvent) {
+            let index = this.clickEvents.indexOf(clickEvent);
+            if (index !== -1) {
+                this.clickEvents.splice(index, 1);
+            }
+        }
+        onMousedown(point) {
+            for (const b of this.clickEvents) {
+                b.onMousedown(point);
+            }
+        }
+        onMouseMove(point) {
+            for (const b of this.clickEvents) {
+                b.onMousemove(point);
+                if (b.hover) {
+                    break;
+                }
+            }
+        }
+        onMouseUp(point) {
+            for (const b of this.clickEvents) {
+                b.onMouseup(point);
+            }
+        }
+    }
+    VERVE.EventManager = EventManager;
 })(VERVE || (VERVE = {}));
 var VERVE;
 (function (VERVE) {
@@ -1774,6 +2052,19 @@ var VERVE;
         intersectWithRectangle(rect) {
             return rect.intersectWithCircle(this);
         }
+        load(gl) {
+            let material = new VERVE.BasicMaterial("#000000");
+            let geometry = new VERVE.CircleGeometry(this.radius, 20);
+            this._shapeComponent = new VERVE.ShapeComponent(geometry, material);
+            this._shapeComponent.load(gl);
+            this._shapeComponent.update(0);
+        }
+        render(render) {
+            this._shapeComponent.x = this.position.x;
+            this._shapeComponent.y = this.position.y;
+            this._shapeComponent.update(10);
+            this._shapeComponent.render(render);
+        }
     }
     VERVE.Circle = Circle;
 })(VERVE || (VERVE = {}));
@@ -1928,6 +2219,19 @@ var VERVE;
             else {
                 return false;
             }
+        }
+        load(gl) {
+            let material = new VERVE.BasicMaterial("#000000");
+            let geometry = new VERVE.PlaneGeometry(this.width, this.height);
+            this._shapeComponent = new VERVE.ShapeComponent(geometry, material);
+            this._shapeComponent.load(gl);
+            this._shapeComponent.update(0);
+        }
+        render(render) {
+            this._shapeComponent.x = this.position.x;
+            this._shapeComponent.y = this.position.y;
+            this._shapeComponent.update(10);
+            this._shapeComponent.render(render);
         }
     }
     VERVE.Rectangle = Rectangle;
@@ -2244,7 +2548,7 @@ gameObject.addComponent(spriteComponent2);
 gameObject.addComponent(spriteComponent);
 let scene2 = new VERVE.Scene();
 scene2.addObject(gameObject);
-let updating = true;
+let updating = false;
 material.color = "rgba(255, 255, 0, 40)";
 let animateMaterial = new VERVE.TextureMaterial(spriteImage);
 let animateSprite = new VERVE.AnimatedComponent(108, 140, 2, 8, animateMaterial);
@@ -2288,7 +2592,11 @@ physicsObject2.addBody(body2, { radius: 40, width: 50, height: 50, rotate: 0 });
 gameObject3.addComponent(animateSprite);
 scene.addObject(gameObject3);
 console.log(physicsObject.body.shape);
-animateSprite.setMouse(physicsObject);
+let eventManager = new VERVE.EventManager();
+VERVE.MouseManager.setEventManger(eventManager);
+animateSprite.onClick = () => {
+    console.log("clicked on sprite componetn");
+};
 let physicesEngine = new VERVE.PhysicsEngine();
 let physics = [];
 let types = ["rectangle", "circle"];
@@ -2299,15 +2607,14 @@ for (let i = 0; i < 600; i++) {
     let pos = new VERVE.Vector2(randomInt(0, 800), randomInt(0, 600));
     let phy = new VERVE.PhysicsObject(pos, new VERVE.Vector2(x, y), phyType[randomInt(0, 1)]);
     let body = new VERVE.Body(types[randomInt(0, 1)], { restitution: 1, density: 1 });
-    phy.addBody(body, { radius: randomInt(5, 10), width: randomInt(10, 20), height: randomInt(10, 20) });
-    physicesEngine.addObjects(phy);
 }
 physicesEngine.load(renderer.gl);
 function start() {
     requestAnimationFrame(start);
-    physicesEngine.update();
-    if (updating)
+    if (updating) {
         renderer.update();
+        physicesEngine.update();
+    }
     renderer.render(scene);
     physicesEngine.render(renderer);
     gameObject.rotate += 0.01;

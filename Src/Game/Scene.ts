@@ -23,7 +23,18 @@ namespace VERVE {
             if(gameObject==undefined) {
                 throw new Error(`game object is not define`)
             }
+            let index = this._gameObjects.indexOf(gameObject);
+            if(index!==-1) {
+                console.warn(`game object already exits in the scene: ${gameObject}`);
+                return;
+            }
             this._gameObjects.push(gameObject);
+        }
+        public removeObject(gameObject:GameObject):void {
+            let index = this._gameObjects.indexOf(gameObject);
+            if(index!==-1) {
+                this._gameObjects.splice(index, 1);
+            }
         }
         public update(delta:number):void {
             for(let g of this._gameObjects) {
